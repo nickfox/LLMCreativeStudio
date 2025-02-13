@@ -1,0 +1,7 @@
+# /Users/nickfox137/Documents/llm-creative-studio/python/requirements.txt
+fastapi
+uvicorn
+openai
+google-generativeai
+python-dotenv
+anthropic
