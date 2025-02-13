@@ -1,0 +1,29 @@
+[
+  {
+    "file_path": "data/research_paper.pdf",
+    "title": "The Impact of AI on Songwriting",
+    "type": "research paper",
+    "keywords": ["AI", "songwriting", "artificial intelligence", "music", "creativity"],
+    "summary": "This paper explores the current and potential future impact of artificial intelligence on the process of songwriting, including lyric generation, melody composition, and overall song structure. It examines both the benefits and potential drawbacks of using AI in creative musical endeavors.",
+    "authors": ["Jane Smith", "Peter Jones"],
+    "section_titles": ["Introduction", "Methods", "Results", "Discussion", "Conclusion"]
+  },
+  {
+    "file_path": "data/chapter1.pdf",
+    "title": "Chapter 1: Introduction to Music Theory",
+    "type": "book chapter",
+    "keywords": ["music theory", "introduction", "harmony", "melody", "scales", "chords", "rhythm"],
+    "summary": "This chapter provides a foundational overview of music theory concepts, including scales, chords, rhythm, and basic harmony. It serves as a prerequisite for understanding more advanced topics.",
+    "authors": ["John Doe"],
+    "section_titles": ["Scales", "Chords", "Rhythm", "Harmony"]
+  },
+  {
+    "file_path": "data/song_lyrics.txt",
+    "title": "My Song Lyrics",
+    "type": "song lyrics",
+    "keywords": ["song", "lyrics", "love", "loss", "hope"],
+    "summary": "These are the lyrics to my original song, exploring themes of love, loss, and finding hope.",
+    "authors": ["Nick Fox"],
+    "section_titles": ["Verse 1", "Chorus", "Verse 2", "Bridge", "Chorus"]
+  }
+]
