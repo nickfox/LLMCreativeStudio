@@ -5,3 +5,10 @@ openai
 google-generativeai
 python-dotenv
 anthropic
+pypdf
+langchain
+langchain-community
+langchain-openai
+langchain-google-genai
+langchain-anthropic
+langchain-core

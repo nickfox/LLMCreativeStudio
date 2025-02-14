@@ -37,7 +37,7 @@ async def select_relevant_documents(query: str, metadata: List[dict], llm: LLM) 
 
     try:
         # Use the llm instance (passed as argument) for document selection.
-        response = await llm.get_response(prompt)
+        response = await llm.get_response(prompt, []) # Pass in empty history
         logging.info(f"Document selection response: {response}")
         relevant_files = json.loads(response)  # Parse the JSON response
         return relevant_files
