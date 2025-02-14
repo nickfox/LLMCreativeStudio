@@ -116,6 +116,7 @@ i'm sure chatting with PDFs has been well documented somewhere. i'm attaching th
 
 langchain next
 
-UnstructuredPDFLoader
-RecursiveCharacterTExtSplitter
+git commit -m "v0.1 - just before langchain and sqlite"
+
+git push -u origin main
 

@@ -8,6 +8,8 @@ struct ContentView: View {
 
     @State private var useDataQuery: Bool = false
     @State private var dataQueryText: String = ""
+    
+    @State private var sessionId: String = UUID().uuidString //Unique session ID
 
     @ObservedObject var networkManager = NetworkManager() // Use the NetworkManager
 
@@ -69,6 +71,11 @@ struct ContentView: View {
                     }
                     .keyboardShortcut(.defaultAction)
                 }
+                HStack {
+                    Button("Clear History") { //Add a clear history button
+                        clearHistory()
+                    }
+                }
             }
             .padding()
         }
@@ -80,11 +87,16 @@ struct ContentView: View {
         // Add user message *locally* before sending
         networkManager.addMessage(text: messageText, sender: "User") // Add to NM's messages
 
-        networkManager.sendMessage(message: messageText, llmName: selectedLLM, dataQuery: useDataQuery ? dataQueryText : "")
+        networkManager.sendMessage(message: messageText, llmName: selectedLLM, dataQuery: useDataQuery ? dataQueryText : "", sessionId: sessionId)
 
         messageText = "" // Clear the input field
         if useDataQuery {
             dataQueryText = ""
         }
+    }
+    
+    func clearHistory() {
+        networkManager.clearMessages()
+        sessionId = UUID().uuidString // Generate a new session ID
     }
 }
