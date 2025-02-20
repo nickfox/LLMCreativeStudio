@@ -1,0 +1,148 @@
+https://huggingface.co/Qwen/Qwen2.5-Coder-32B-Instruct
+
+NEW
+Text Generation
+Examples
+Input a message to start chatting with Qwen/Qwen2.5-Coder-32B-Instruct.
+
+Write a Python application that demonstrates Retrieval-Augmented Generation (RAG) for processing research papers in PDF format. The application should meet the following requirements: 1. RAG and Langchain: Utilize the Langchain library to implement the RAG pipeline. 2. Vector Database: Use ChromaDB as the vector database to store document embeddings. Include the code to set up and interact with ChromaDB. 3. PDF Processing: Implement functionality to load and process research papers in PDF format using the PyPDF2 library. 4. Section-Based Chunking: Chunk the research paper content based on section titles. The code should identify section titles within the PDF and use them as delimiters for creating document chunks. Assume section titles are visually distinct (e.g., larger font, bolded). 5. Image and Table Handling: Process images and tables present in the research papers. The code should extract images and tables and associate them with the correct section of the paper they appear in. For simplicity, focus on extracting captions for images and summaries for tables and storing these as text associated with the corresponding section chunk. 6. Embedding Generation: Use the all-mpnet-base-v2 sentence transformer model (from Sentence Transformers library) to generate embeddings for text chunks and queries. Include code to load and use this embedding model. 7. Interrogation Functionality: Provide a function or interface that allows a user to interrogate (query) the processed PDF content. This function should take a user query as input, perform RAG using the vector database and Langchain, and return a relevant answer based on the content of the PDF. Please provide the complete Python code for this application, including: * Code for document loading and preprocessing (PDF parsing using PyPDF2, section-based chunking, image/table caption/summary extraction). * Code for loading and using the all-mpnet-base-v2 embedding model. * Code for setting up and interacting with ChromaDB. * Code for the RAG pipeline using Langchain, incorporating ChromaDB and all-mpnet-base-v2. * Example code demonstrating how to use the interrogation function with a sample query. Assume the user has basic Python knowledge and has installed Langchain, ChromaDB, PyPDF2, and Sentence Transformers libraries. Provide clear and well-commented code. Focus on clarity, functionality, and demonstrating the core concepts of RAG for research paper analysis. Efficiency and production-level robustness are secondary to demonstrating the core functionality for this example.
+
+Certainly! Below is a complete Python application that demonstrates Retrieval-Augmented Generation (RAG) for processing research papers in PDF format. The application meets all the specified requirements and includes detailed comments for clarity.
+Prerequisites
+
+Ensure you have the following libraries installed:
+bash
+
+pip install langchain chromadb pypdf2 sentence-transformers
+
+Complete Python Code
+python
+
+import os
+import re
+import io
+from PyPDF2 import PdfReader
+from sentence_transformers import SentenceTransformer
+from chromadb import Client
+from chromadb.config import Settings
+from langchain.vectorstores import Chroma
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.chains import RetrievalQA
+from langchain.llms import OpenAI  # You can use any LLM, here we use OpenAI for demonstration
+
+# Step 1: Load and preprocess the PDF document
+def load_pdf(pdf_path):
+    reader = PdfReader(pdf_path)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text() + "\n"
+    return text
+
+def extract_section_titles(text):
+    # Simple regex to find section titles (assuming they are in uppercase and followed by a newline)
+    section_titles = re.findall(r'\n([A-Z\s]+)\n', text)
+    return section_titles
+
+def chunk_text_by_sections(text, section_titles):
+    chunks = []
+    for title in section_titles:
+        # Find the start and end indices of each section
+        start = text.find(title)
+        end = text.find(title, start + len(title))
+        if end == -1:
+            end = len(text)
+        section_text = text[start:end].strip()
+        chunks.append((title.strip(), section_text))
+    return chunks
+
+def extract_captions_and_summaries(text):
+    # Simple regex to find captions and summaries (assuming they start with "Figure" or "Table")
+    captions = re.findall(r'Figure \d+: (.+)', text)
+    summaries = re.findall(r'Table \d+: (.+)', text)
+    return captions, summaries
+
+# Step 2: Load and use the embedding model
+def load_embedding_model():
+    model = SentenceTransformer('all-mpnet-base-v2')
+    return model
+
+# Step 3: Set up and interact with ChromaDB
+def setup_chroma_db():
+    client = Client(Settings(chroma_db_impl="duckdb+parquet", persist_directory="./chroma_db"))
+    return client
+
+def create_vector_store(client, chunks, embedding_model):
+    embeddings = HuggingFaceEmbeddings(model_name='all-mpnet-base-v2')
+    vector_store = Chroma(client=client, collection_name="research_paper", embedding_function=embeddings)
+    for title, text in chunks:
+        vector_store.add_texts([text], metadatas=[{"title": title}])
+    return vector_store
+
+# Step 4: RAG pipeline using Langchain
+def setup_rag_pipeline(vector_store, llm):
+    qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=vector_store.as_retriever())
+    return qa
+
+# Step 5: Interrogation functionality
+def interrogate(qa, query):
+    response = qa.run(query)
+    return response
+
+# Example usage
+if __name__ == "__main__":
+    # Load and preprocess the PDF
+    pdf_path = "sample_paper.pdf"  # Replace with your PDF file path
+    text = load_pdf(pdf_path)
+    section_titles = extract_section_titles(text)
+    chunks = chunk_text_by_sections(text, section_titles)
+    captions, summaries = extract_captions_and_summaries(text)
+
+    # Add captions and summaries to the corresponding sections
+    for i, (title, text) in enumerate(chunks):
+        section_captions = [caption for caption in captions if caption in text]
+        section_summaries = [summary for summary in summaries if summary in text]
+        chunks[i] = (title, text + "\nCaptions: " + ", ".join(section_captions) + "\nSummaries: " + ", ".join(section_summaries))
+
+    # Load embedding model and set up ChromaDB
+    embedding_model = load_embedding_model()
+    client = setup_chroma_db()
+    vector_store = create_vector_store(client, chunks, embedding_model)
+
+    # Set up RAG pipeline
+    llm = OpenAI(api_key="your_openai_api_key")  # Replace with your OpenAI API key
+    qa = setup_rag_pipeline(vector_store, llm)
+
+    # Interrogate the processed PDF content
+    query = "What are the main contributions of this paper?"
+    response = interrogate(qa, query)
+    print("Query:", query)
+    print("Response:", response)
+
+Explanation
+
+    PDF Loading and Preprocessing:
+        load_pdf: Reads the PDF file and extracts text from each page.
+        extract_section_titles: Uses a regex to find section titles in the text.
+        chunk_text_by_sections: Splits the text into chunks based on section titles.
+        extract_captions_and_summaries: Extracts captions and summaries from the text.
+
+    Embedding Model:
+        load_embedding_model: Loads the all-mpnet-base-v2 sentence transformer model.
+
+    ChromaDB Setup:
+        setup_chroma_db: Initializes a ChromaDB client.
+        create_vector_store: Creates a vector store in ChromaDB and adds text chunks with metadata.
+
+    RAG Pipeline:
+        setup_rag_pipeline: Sets up the RAG pipeline using Langchain with a specified LLM (OpenAI in this case).
+
+    Interrogation Functionality:
+        interrogate: Takes a user query, performs RAG, and returns a response.
+
+Notes
+
+    Replace "your_openai_api_key" with your actual OpenAI API key.
+    The regex for section titles and captions/summaries is quite basic and may need to be adjusted based on the specific formatting of your PDFs.
+    This example assumes that section titles are in uppercase and followed by a newline. Adjust the regex if your PDFs have different formatting.
+
+This code provides a clear demonstration of the core concepts of RAG for processing research papers in PDF format.

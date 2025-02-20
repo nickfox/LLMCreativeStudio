@@ -38,19 +38,36 @@ class NetworkManager: ObservableObject {
                 return
             }
 
-            if let httpResponse = response as? HTTPURLResponse { // No guard needed
-                print("HTTP Status Code: \(httpResponse.statusCode)") // Always print status
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status Code: \(httpResponse.statusCode)")
 
                 if (200...299).contains(httpResponse.statusCode) {
                     if let data = data,
-                       let jsonResponse = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                       let responseText = jsonResponse["response"] as? String,
-                       let llmName = jsonResponse["llm"] as? String
+                       let jsonResponse = try? JSONSerialization.jsonObject(with: data, options: [])
                     {
-                        DispatchQueue.main.async {
-                            //Append to NetworkManagers messages array.
-                            let llmMessage = Message(text: responseText, sender: llmName, color: self.llmColor(for: llmName))
-                            self.messages.append(llmMessage)
+                        DispatchQueue.main.async { [weak self] in
+                            guard let self = self else { return }
+                            // Handle the new response format, which can be a single response or an array
+                            if let responseDict = jsonResponse as? [String: Any],
+                               let responseText = responseDict["response"] as? String,
+                               let llmName = responseDict["llm"] as? String {
+                                // Single response
+                                print("Received llmName from server (single):", llmName)  // Add this line
+                                let llmMessage = Message(text: responseText, sender: llmName, senderName: self.getSenderName(for: llmName))
+                                self.messages.append(llmMessage)
+                            } else if let responseArray = jsonResponse as? [[String: Any]] {
+                                // Multiple responses.
+                                for responseDict in responseArray {
+                                    if let responseText = responseDict["response"] as? String,
+                                       let llmName = responseDict["llm"] as? String {
+                                        print("Received llmName from server (multiple):", llmName)  // Add this line
+                                        let llmMessage = Message(text: responseText, sender: llmName, senderName: self.getSenderName(for: llmName))
+                                        self.messages.append(llmMessage)
+                                    }
+                                }
+                            } else {
+                                print("Error: Unexpected response format from server.")
+                            }
                         }
                     }
                 } else { // Handle errors
@@ -59,9 +76,9 @@ class NetworkManager: ObservableObject {
                            print("Error Response from Server:")
                            print(errorResponse)
                        } else if let data = data, let errorString = String(data: data, encoding: .utf8) {
-                            print("Error Response from Server:")
-                            print(errorString) // Print raw error string
-                        }
+                        print("Error Response from Server:")
+                        print(errorString)
+                    }
                 }
             }
         }
@@ -69,9 +86,9 @@ class NetworkManager: ObservableObject {
     }
 
     // Add this function to add a message directly to the messages array
-    func addMessage(text: String, sender: String) {
+    func addMessage(text: String, sender: String, senderName: String) {
         DispatchQueue.main.async {
-            let newMessage = Message(text: text, sender: sender, color: self.llmColor(for: sender))
+            let newMessage = Message(text: text, sender: sender, senderName: senderName)
             self.messages.append(newMessage)
         }
     }
@@ -81,9 +98,61 @@ class NetworkManager: ObservableObject {
             self.messages = []
         }
     }
+    
+    func parseMessage(_ message: String) -> (llmName: String, parsedMessage: String, dataQuery: String) {
+        // Regular expressions to find @mentions
+        let mentionRegex = try! NSRegularExpression(pattern: "@([a-zA-Z]+)", options: [])
+        let matches = mentionRegex.matches(in: message, options: [], range: NSRange(location: 0, length: message.utf16.count))
+
+        var llmName = "all" // Default to all LLMs if no mention
+        var dataQuery = ""
+        var parsedMessage = message
+
+        if let match = matches.first { // Only consider the *first* mention
+            let mentionRange = Range(match.range(at: 1), in: message)!
+            let mention = String(message[mentionRange])
+
+            // Remove the mention from the message
+            parsedMessage = message.replacingCharacters(in: Range(match.range, in: message)!, with: "")
+            parsedMessage = parsedMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            switch mention.lowercased() {
+            case "a", "claude":
+                llmName = "claude"
+            case "c", "chatgpt":
+                llmName = "chatgpt"
+            case "g", "gemini":
+                llmName = "gemini"
+            case "q":
+                llmName = "gemini"  // Still use Gemini for data queries
+                dataQuery = parsedMessage // The rest of the message is the data query
+                parsedMessage = "" // The message to the LLM is empty
+            default:
+                llmName = "all" // Default fallback is all LLMs
+            }
+        } else {
+            //If no mention, then the message is for the user.
+            llmName = "all"
+            parsedMessage = message
+        }
+
+        return (llmName, parsedMessage, dataQuery)
+    }
+
 
     // Helper function to get color for LLM
-    func llmColor(for llmName: String) -> Color {
-        return .gray
+    func getSenderName(for llmName: String) -> String {
+        switch llmName.lowercased() {
+            case "gemini":
+                return "Gemini"
+            case "chatgpt":
+                return "ChatGPT"
+            case "claude":
+                return "Claude"
+            case "user":
+                return "nick"
+            default:
+                return "Unknown"
+            }
     }
 }

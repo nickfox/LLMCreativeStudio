@@ -56,7 +56,7 @@ gemini, chatgpt and claude.
 i have no interest at all in backwards compatibility. i think swiftUI would be the best going forward.
 
 *************
-
+/Users/nickfox137/Documents/10/1501588546224 copy.jpg
 claude cheapest model
 
 claude-3-5-haiku-20241022
@@ -88,12 +88,13 @@ i've broken out the app into other files and everything is working correctly. i'
 
 within the chat app, please remove the 3 buttons from the app (gemini, chatgpt, claude) and instead, i would like to "send" to one of the AIs when i mention them by name in my chat text. their names are below preceeded by the @ sign. (ie, Nick -> "could i get a summary of that, @g", "hey @o, can you please check the web for me.")
 
-@all = send message to all 3
+sending a message without an @ indicator means that i am sending a message to all users.
+@q = query backend data (pdfs, "@q, what do you think of the agentic reasoning paper?")
 @a and @claude = send to claude
 @c and @chatgpt = send to chatgpt
 @g and @gemini = send to gemini
 
-no send button
+no buttons at all. we can put any required functionality in the app menus.
 
 textbox goes all the way across the app with padding, and the text box should be 3 lines high. in the textbox, if i press enter then please send. if i press shift-enter, then just go down to the next line.
 
@@ -115,6 +116,41 @@ i'm sure chatting with PDFs has been well documented somewhere. i'm attaching th
 ^^^^^^^^^^^^^
 
 langchain next
+
+langchain academy
+
+langraph state manangement?
+
+what is the new ochestrator object in langgraph?
+
+standard gitignore for python?
+
+FAISS - facebook AI similarity search
+
+HUMAN LOO
+
+wikipedia search agent and arxiv search agent.
+
+ollama pull deepseek-r1:14B and 32B ?
+
+
+use the paper to write code agents and more!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+https://huggingface.co/blog/open-deep-research
+
+
+
+RAG - CHUNKING BY TITLES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+https://www.youtube.com/watch?v=uLrReyH5cu0
+this was very good. ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Building Effective Agents with LangGraph
+https://www.youtube.com/watch?v=aHCDrAbH_go
+
+LangChain vs LangGraph: A Tale of Two Frameworks
+https://www.youtube.com/watch?v=qAF1NjEVHhY
+
+
+create an agent for claude to access web
 
 git commit -m "v0.1 - just before langchain and sqlite"
 
