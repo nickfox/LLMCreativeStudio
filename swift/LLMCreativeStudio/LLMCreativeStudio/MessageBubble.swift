@@ -1,37 +1,27 @@
 // /Users/nickfox137/Documents/llm-creative-studio/swift/LLMCreativeStudio/LLMCreativeStudio/MessageBubble.swift
 import SwiftUI
-
 struct MessageBubble: View {
     let message: Message
-
+    
     var body: some View {
-        HStack {
-            if message.sender == "User" {
-                Spacer()
-                VStack(alignment: .trailing) {
-                    Text("nick")
-                        .font(.caption)
-                        .foregroundColor(message.color)
-                        .padding(.trailing, 5)
-                    Text(message.text)
-                        .padding()
-                        .background(message.color)
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-            } else {
-                VStack(alignment: .leading) {
-                    Text(message.sender)
-                        .font(.caption)
-                        .foregroundColor(message.color)
-                    Text(message.text)
-                        .padding()
-                        .background(message.color)
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-                Spacer()
-            }
+        VStack(alignment: .leading, spacing: 4) {
+            Text(message.senderName)
+                .foregroundColor(message.sender == "user" ?
+                    Color(red: 0.0, green: 0.8, blue: 1.0, opacity: 0.7) :     // Cyan for user
+                    Color(red: 1.0, green: 0.2, blue: 0.7, opacity: 0.5))      // Magenta for LLMs
+                .font(.system(size: 13, weight: .medium))
+                .padding(.bottom, 2)
+                .padding(.horizontal, 16)
+            
+            Text(message.text)
+                .font(.system(size: 15))
+                .foregroundColor(.messageText.opacity(0.9))
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(NSColor.windowBackgroundColor).opacity(0.17))
+                .cornerRadius(12)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 }

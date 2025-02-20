@@ -1,0 +1,103 @@
+Write a Python application that demonstrates Retrieval-Augmented Generation (RAG) for processing research papers in PDF format.
+
+The application should meet the following requirements:
+
+1.  **RAG and Langchain:** Utilize the Langchain library to implement the RAG pipeline.
+2.  **Vector Database:** Use **ChromaDB** as the vector database to store document embeddings. Include the code to set up and interact with ChromaDB.
+3.  **PDF Processing:** Implement functionality to load and process research papers in PDF format using the **PyPDF2** library.
+4.  **Section-Based Chunking:** Chunk the research paper content based on section titles. The code should identify section titles within the PDF and use them as delimiters for creating document chunks.  Assume section titles are visually distinct (e.g., larger font, bolded).
+5.  **Image and Table Handling:** Process images and tables present in the research papers. The code should extract images and tables and associate them with the correct section of the paper they appear in. For simplicity, focus on extracting **captions for images and summaries for tables** and storing these as text associated with the corresponding section chunk.
+6.  **Embedding Generation:** Use the **`all-mpnet-base-v2`** sentence transformer model (from Sentence Transformers library) to generate embeddings for text chunks and queries. Include code to load and use this embedding model.
+7.  **Interrogation Functionality:** Provide a function or interface that allows a user to interrogate (query) the processed PDF content. This function should take a user query as input, perform RAG using the vector database and Langchain, and return a relevant answer based on the content of the PDF.
+
+Please provide the complete Python code for this application, including:
+
+*   Code for document loading and preprocessing (PDF parsing using PyPDF2, section-based chunking, image/table caption/summary extraction).
+*   Code for loading and using the `all-mpnet-base-v2` embedding model.
+*   Code for setting up and interacting with ChromaDB.
+*   Code for the RAG pipeline using Langchain, incorporating ChromaDB and `all-mpnet-base-v2`.
+*   Example code demonstrating how to use the interrogation function with a sample query.
+
+Assume the user has basic Python knowledge and has installed Langchain, ChromaDB, PyPDF2, and Sentence Transformers libraries. Provide clear and well-commented code.
+
+Focus on clarity, functionality, and demonstrating the core concepts of RAG for research paper analysis. Efficiency and production-level robustness are secondary to demonstrating the core functionality for this example.
+
+
+
+*********************************************
+
+grading prompt
+
+*********************************************
+
+You are an expert evaluator of Python code, specifically focusing on applications that implement Retrieval-Augmented Generation (RAG) for processing research papers in PDF format.
+
+You have been provided with the Python code outputs from three different language models (Model 1, Model 2, and Model 3) in response to the following prompt:
+
+[Insert the RAG application prompt you used previously here - the refined prompt with ChromaDB, all-mpnet-base-v2, and PyPDF2]
+
+Your task is to evaluate and grade each of these code applications based on the following criteria.  Present your evaluation as a table in markdown format, with models as rows and criteria as columns. For each criterion and each model, provide a score from 0% to 100% (where 100% is perfect and 0% is completely missing or non-functional) and a brief justification for the score.
+
+**Evaluation Criteria:**
+
+1.  **Code Functionality (Weight: 40%):**
+    *   **Core RAG Implementation (20%):** To what extent does the code successfully implement a functional RAG pipeline using Langchain, a vector database (ChromaDB), and an embedding model (`all-mpnet-base-v2`)? Does it correctly retrieve relevant information from the processed PDFs based on user queries?  Assess if the core RAG components are present and working as expected.
+    *   **PDF Processing and Interrogation (20%):**  Does the code successfully load and process PDF files using PyPDF2?  Is the "interrogation function" functional and able to query the PDF content and return relevant answers? Evaluate the basic PDF processing and query handling capabilities.
+
+2.  **Code Clarity and Readability (Weight: 25%):**
+    *   **Code Structure and Organization (10%):** Is the code well-structured into logical functions and classes (if applicable)? Is the code easy to follow and understand? Assess the overall organization and modularity of the code.
+    *   **Comments and Documentation (15%):**  Are there sufficient comments explaining the purpose of different code sections and functions? Is the code well-documented, making it easy for someone else to understand and maintain? Evaluate the level and quality of comments and documentation.
+
+3.  **Section-Based Chunking Approach (Weight: 20%):**
+    *   **Section Title Detection (10%):** How effectively does the code attempt to identify section titles within the PDF? Is the approach reasonable and potentially functional for research papers? Assess the logic and approach used for section title detection.
+    *   **Chunking Implementation (10%):**  Does the code correctly chunk the PDF content based on the identified section titles? Are the resulting chunks semantically meaningful and appropriate for RAG? Evaluate the chunking logic and the quality of the resulting chunks.
+
+4.  **Image and Table Processing (Weight: 15%):**
+    *   **Extraction of Captions/Summaries (10%):**  Does the code attempt to extract captions for images and summaries for tables as requested? How successful is this extraction? Evaluate the effort and success in extracting non-textual information.
+    *   **Association with Sections (5%):**  Does the code correctly associate the extracted image/table information with the appropriate section of the paper? Is this association maintained in the vector database or during the RAG process? Evaluate the handling of image/table association with text content.
+
+5.  **Overall Code Quality (Not Scored, but Noteworthy Points):**
+    *   **Python Best Practices:**  Does the code adhere to general Python coding best practices (e.g., error handling, use of appropriate data structures, efficiency considerations where relevant)?
+    *   **Completeness and Run-ability:** Is the code a complete and runnable application, or are there significant parts missing or errors that prevent it from running as intended?
+    *   **Ingenuity and Approach:**  Are there any particularly clever or effective approaches used by the model in its solution? Are there any significant shortcomings or less effective approaches?
+
+**Output Format:**
+
+Present your evaluation in a markdown table like this:
+
+```markdown
+| Model         | Code Functionality (40%) | Code Clarity & Readability (25%) | Section Chunking (20%) | Image/Table Processing (15%) | Overall Code Quality Notes |
+|---------------|--------------------------|-----------------------------------|------------------------|-----------------------------|----------------------------|
+| Model 1 (Name) | Score (%) - Justification  | Score (%) - Justification        | Score (%) - Justification | Score (%) - Justification      | Noteworthy Observations    |
+| Model 2 (Name) | Score (%) - Justification  | Score (%) - Justification        | Score (%) - Justification | Score (%) - Justification      | Noteworthy Observations    |
+| Model 3 (Name) | Score (%) - Justification  | Score (%) - Justification        | Score (%) - Justification | Score (%) - Justification      | Noteworthy Observations    |
+
+
+
+**********************************************
+
+notes on grading
+https://gemini.google.com/app/b5fc7f3c898d191f
+
+**********************************************
+
+**Explanation of the Grading Prompt:**
+
+*   **Role Definition:**  You are defined as an "expert evaluator of Python code," setting the tone for a critical and knowledgeable assessment.
+*   **Context Provided:** The prompt clearly states the task (grading RAG applications), the input (code from three models), and the original prompt used to generate the code.
+*   **Weighted Criteria:**  The prompt breaks down the evaluation into weighted criteria, reflecting the relative importance of different aspects (Functionality is weighted highest at 40%).
+*   **Specific Evaluation Points within Each Criterion:**  Each criterion is further broken down into specific questions to guide the evaluation and ensure you are looking at key aspects of the code.
+*   **Scoring and Justification:**  The prompt explicitly asks for scores (0-100%) and justifications for each score, making the evaluation more objective and transparent.
+*   **Overall Code Quality (Qualitative):**  A section for "Overall Code Quality Notes" allows for capturing qualitative observations and nuances that might not be fully reflected in the numerical scores.
+*   **Table Format:** The requested markdown table format provides a structured and easy-to-compare presentation of the evaluation results.
+*   **Model Names Provided:**  Clear model names are given to ensure consistent labeling in the table.
+
+**How to Use This Prompt:**
+
+1.  **Copy and paste this grading prompt into LM Studio (or your evaluation environment).**
+2.  **In the prompt, replace "[Insert the RAG application prompt you used previously here...]"** with the *exact* refined prompt you used to generate the code from the models. This is crucial for context.
+3.  **Provide the code outputs from each of the three models** (DeepSeek R1 Distill (Llama 8B), DeepSeek R1 Distill (Qwen 7B), and DeepSeek Coder V2 Lite Instruct 4bit mlx) to LM Studio *as context* when you run this grading prompt.  You might need to paste the code outputs into the chat interface before or alongside the grading prompt, depending on how LM Studio handles context for evaluation tasks.
+4.  **Run the grading prompt with each model.**  While it might seem counterintuitive to ask a model to grade *itself* or *other models*, in this case, you are using the models as *evaluation assistants*.  They can process and analyze code and provide structured feedback based on your criteria.  You will then review and refine their evaluations.
+5.  **Review and Refine the Evaluations:**  Critically review the table generated by each model.  Do you agree with the scores and justifications? Are there points they missed or overemphasized?  Use your own expert judgment to adjust the scores and justifications to create your final, human-validated evaluation table.
+
+This prompt should give you a solid framework for systematically evaluating the RAG applications generated by the three models. Let me know if you have any questions as you go through the evaluation process!
