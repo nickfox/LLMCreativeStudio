@@ -1,4 +1,5 @@
 // /Users/nickfox137/Documents/llm-creative-studio/swift/LLMCreativeStudio/LLMCreativeStudio/LLMCreativeStudioApp.swift
+
 import SwiftUI
 
 @main
@@ -68,3 +69,4 @@ extension Color {
         )
     }
 }
+

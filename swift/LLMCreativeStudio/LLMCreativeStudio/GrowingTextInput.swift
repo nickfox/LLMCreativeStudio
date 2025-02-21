@@ -1,4 +1,5 @@
 // /Users/nickfox137/Documents/llm-creative-studio/swift/LLMCreativeStudio/LLMCreativeStudio/GrowingTextInput.swift
+
 import SwiftUI
 import AppKit
 

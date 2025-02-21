@@ -1,4 +1,5 @@
 // /Users/nickfox137/Documents/llm-creative-studio/swift/LLMCreativeStudio/LLMCreativeStudio/Message.swift
+
 import SwiftUI
 
 struct Message: Identifiable {
@@ -17,7 +18,7 @@ struct Message: Identifiable {
     
     var formattedTimestamp: String {
         let formatted = Message.timestampFormatter.string(from: timestamp)
-            return formatted.replacingOccurrences(of: "AM", with: "am")
-                           .replacingOccurrences(of: "PM", with: "pm")
+            return formatted.replacingOccurrences(of: "AM", with: "\u{2009}am ")
+                           .replacingOccurrences(of: "PM", with: "\u{2009}pm ")
     }
 }
