@@ -1,5 +1,7 @@
 // /Users/nickfox137/Documents/llm-creative-studio/swift/LLMCreativeStudio/LLMCreativeStudio/ContentView.swift
+
 import SwiftUI
+
 struct ContentView: View {
    @State private var messageText: String = ""
    @EnvironmentObject var networkManager: NetworkManager
@@ -54,4 +56,5 @@ struct ContentView: View {
        messageText = ""
    }
 }
+
 

@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		CE8CD9372D5B891600BEE26C /* LLMCreativeStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LLMCreativeStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE8D6F982D67CFA70056463E /* LLMCreativeStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LLMCreativeStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		CE8CD9392D5B891600BEE26C /* LLMCreativeStudio */ = {
+		CE8D6F9A2D67CFA70056463E /* LLMCreativeStudio */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = LLMCreativeStudio;
 			sourceTree = "<group>";
@@ -19,7 +19,7 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		CE8CD9342D5B891600BEE26C /* Frameworks */ = {
+		CE8D6F952D67CFA70056463E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -29,18 +29,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		CE8CD92E2D5B891600BEE26C = {
+		CE8D6F8F2D67CFA70056463E = {
 			isa = PBXGroup;
 			children = (
-				CE8CD9392D5B891600BEE26C /* LLMCreativeStudio */,
-				CE8CD9382D5B891600BEE26C /* Products */,
+				CE8D6F9A2D67CFA70056463E /* LLMCreativeStudio */,
+				CE8D6F992D67CFA70056463E /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		CE8CD9382D5B891600BEE26C /* Products */ = {
+		CE8D6F992D67CFA70056463E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				CE8CD9372D5B891600BEE26C /* LLMCreativeStudio.app */,
+				CE8D6F982D67CFA70056463E /* LLMCreativeStudio.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,64 +48,64 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		CE8CD9362D5B891600BEE26C /* LLMCreativeStudio */ = {
+		CE8D6F972D67CFA70056463E /* LLMCreativeStudio */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CE8CD9462D5B891700BEE26C /* Build configuration list for PBXNativeTarget "LLMCreativeStudio" */;
+			buildConfigurationList = CE8D6FA72D67CFA80056463E /* Build configuration list for PBXNativeTarget "LLMCreativeStudio" */;
 			buildPhases = (
-				CE8CD9332D5B891600BEE26C /* Sources */,
-				CE8CD9342D5B891600BEE26C /* Frameworks */,
-				CE8CD9352D5B891600BEE26C /* Resources */,
+				CE8D6F942D67CFA70056463E /* Sources */,
+				CE8D6F952D67CFA70056463E /* Frameworks */,
+				CE8D6F962D67CFA70056463E /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				CE8CD9392D5B891600BEE26C /* LLMCreativeStudio */,
+				CE8D6F9A2D67CFA70056463E /* LLMCreativeStudio */,
 			);
 			name = LLMCreativeStudio;
 			packageProductDependencies = (
 			);
 			productName = LLMCreativeStudio;
-			productReference = CE8CD9372D5B891600BEE26C /* LLMCreativeStudio.app */;
+			productReference = CE8D6F982D67CFA70056463E /* LLMCreativeStudio.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		CE8CD92F2D5B891600BEE26C /* Project object */ = {
+		CE8D6F902D67CFA70056463E /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
-					CE8CD9362D5B891600BEE26C = {
+					CE8D6F972D67CFA70056463E = {
 						CreatedOnToolsVersion = 16.2;
 					};
 				};
 			};
-			buildConfigurationList = CE8CD9322D5B891600BEE26C /* Build configuration list for PBXProject "LLMCreativeStudio" */;
+			buildConfigurationList = CE8D6F932D67CFA70056463E /* Build configuration list for PBXProject "LLMCreativeStudio" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = CE8CD92E2D5B891600BEE26C;
+			mainGroup = CE8D6F8F2D67CFA70056463E;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = CE8CD9382D5B891600BEE26C /* Products */;
+			productRefGroup = CE8D6F992D67CFA70056463E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				CE8CD9362D5B891600BEE26C /* LLMCreativeStudio */,
+				CE8D6F972D67CFA70056463E /* LLMCreativeStudio */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		CE8CD9352D5B891600BEE26C /* Resources */ = {
+		CE8D6F962D67CFA70056463E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -115,7 +115,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		CE8CD9332D5B891600BEE26C /* Sources */ = {
+		CE8D6F942D67CFA70056463E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -125,7 +125,7 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		CE8CD9442D5B891700BEE26C /* Debug */ = {
+		CE8D6FA52D67CFA80056463E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -188,7 +188,7 @@
 			};
 			name = Debug;
 		};
-		CE8CD9452D5B891700BEE26C /* Release */ = {
+		CE8D6FA62D67CFA80056463E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -243,12 +243,14 @@
 			};
 			name = Release;
 		};
-		CE8CD9472D5B891700BEE26C /* Debug */ = {
+		CE8D6FA82D67CFA80056463E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = LLMCreativeStudio/LLMCreativeStudio.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -257,6 +259,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LLMCreativeStudio;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -270,12 +273,14 @@
 			};
 			name = Debug;
 		};
-		CE8CD9482D5B891700BEE26C /* Release */ = {
+		CE8D6FA92D67CFA80056463E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = LLMCreativeStudio/LLMCreativeStudio.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -284,6 +289,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LLMCreativeStudio;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -300,25 +306,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		CE8CD9322D5B891600BEE26C /* Build configuration list for PBXProject "LLMCreativeStudio" */ = {
+		CE8D6F932D67CFA70056463E /* Build configuration list for PBXProject "LLMCreativeStudio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				CE8CD9442D5B891700BEE26C /* Debug */,
-				CE8CD9452D5B891700BEE26C /* Release */,
+				CE8D6FA52D67CFA80056463E /* Debug */,
+				CE8D6FA62D67CFA80056463E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		CE8CD9462D5B891700BEE26C /* Build configuration list for PBXNativeTarget "LLMCreativeStudio" */ = {
+		CE8D6FA72D67CFA80056463E /* Build configuration list for PBXNativeTarget "LLMCreativeStudio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				CE8CD9472D5B891700BEE26C /* Debug */,
-				CE8CD9482D5B891700BEE26C /* Release */,
+				CE8D6FA82D67CFA80056463E /* Debug */,
+				CE8D6FA92D67CFA80056463E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = CE8CD92F2D5B891600BEE26C /* Project object */;
+	rootObject = CE8D6F902D67CFA70056463E /* Project object */;
 }
