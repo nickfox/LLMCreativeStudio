@@ -6,8 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		CEA2E2DD2D6965A1005B65B6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CE8D6F902D67CFA70056463E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CE8D6F972D67CFA70056463E;
+			remoteInfo = LLMCreativeStudio;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		CE8D6F982D67CFA70056463E /* LLMCreativeStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LLMCreativeStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CEA2E2D92D6965A1005B65B6 /* LLMCreativeStudioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LLMCreativeStudioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +27,22 @@
 			path = LLMCreativeStudio;
 			sourceTree = "<group>";
 		};
+		CEA2E2DA2D6965A1005B65B6 /* LLMCreativeStudioTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LLMCreativeStudioTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		CE8D6F952D67CFA70056463E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CEA2E2D62D6965A1005B65B6 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				CE8D6F9A2D67CFA70056463E /* LLMCreativeStudio */,
+				CEA2E2DA2D6965A1005B65B6 /* LLMCreativeStudioTests */,
 				CE8D6F992D67CFA70056463E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				CE8D6F982D67CFA70056463E /* LLMCreativeStudio.app */,
+				CEA2E2D92D6965A1005B65B6 /* LLMCreativeStudioTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +95,29 @@
 			productReference = CE8D6F982D67CFA70056463E /* LLMCreativeStudio.app */;
 			productType = "com.apple.product-type.application";
 		};
+		CEA2E2D82D6965A1005B65B6 /* LLMCreativeStudioTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CEA2E2E12D6965A1005B65B6 /* Build configuration list for PBXNativeTarget "LLMCreativeStudioTests" */;
+			buildPhases = (
+				CEA2E2D52D6965A1005B65B6 /* Sources */,
+				CEA2E2D62D6965A1005B65B6 /* Frameworks */,
+				CEA2E2D72D6965A1005B65B6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CEA2E2DE2D6965A1005B65B6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CEA2E2DA2D6965A1005B65B6 /* LLMCreativeStudioTests */,
+			);
+			name = LLMCreativeStudioTests;
+			packageProductDependencies = (
+			);
+			productName = LLMCreativeStudioTests;
+			productReference = CEA2E2D92D6965A1005B65B6 /* LLMCreativeStudioTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -82,6 +130,10 @@
 				TargetAttributes = {
 					CE8D6F972D67CFA70056463E = {
 						CreatedOnToolsVersion = 16.2;
+					};
+					CEA2E2D82D6965A1005B65B6 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = CE8D6F972D67CFA70056463E;
 					};
 				};
 			};
@@ -100,12 +152,20 @@
 			projectRoot = "";
 			targets = (
 				CE8D6F972D67CFA70056463E /* LLMCreativeStudio */,
+				CEA2E2D82D6965A1005B65B6 /* LLMCreativeStudioTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		CE8D6F962D67CFA70056463E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CEA2E2D72D6965A1005B65B6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +182,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CEA2E2D52D6965A1005B65B6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CEA2E2DE2D6965A1005B65B6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CE8D6F972D67CFA70056463E /* LLMCreativeStudio */;
+			targetProxy = CEA2E2DD2D6965A1005B65B6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		CE8D6FA52D67CFA80056463E /* Debug */ = {
@@ -303,6 +378,40 @@
 			};
 			name = Release;
 		};
+		CEA2E2DF2D6965A1005B65B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 664X7G9P7V;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.websmithing.LLMCreativeStudioTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LLMCreativeStudio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LLMCreativeStudio";
+			};
+			name = Debug;
+		};
+		CEA2E2E02D6965A1005B65B6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 664X7G9P7V;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.websmithing.LLMCreativeStudioTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LLMCreativeStudio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LLMCreativeStudio";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -320,6 +429,15 @@
 			buildConfigurations = (
 				CE8D6FA82D67CFA80056463E /* Debug */,
 				CE8D6FA92D67CFA80056463E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CEA2E2E12D6965A1005B65B6 /* Build configuration list for PBXNativeTarget "LLMCreativeStudioTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CEA2E2DF2D6965A1005B65B6 /* Debug */,
+				CEA2E2E02D6965A1005B65B6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
