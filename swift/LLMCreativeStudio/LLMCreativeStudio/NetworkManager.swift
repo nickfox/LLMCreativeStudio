@@ -6,7 +6,8 @@ import SwiftUI
 
 class NetworkManager: ObservableObject {
     @Published var messages: [Message] = []
-
+    @Published var currentConversationMode: String = "open"
+    
     func sendMessage(message: String, llmName: String, dataQuery: String = "", sessionId: String) {
         guard let url = URL(string: "http://localhost:8000/chat") else {
             print("Invalid URL")
@@ -17,7 +18,17 @@ class NetworkManager: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let json: [String: Any] = ["llm_name": llmName, "message": message, "data_query": dataQuery, "session_id": sessionId]
+        let lastMessageId = messages.last?.id
+        
+        let json: [String: Any] = [
+            "llm_name": llmName,
+            "message": message,
+            "data_query": dataQuery,
+            "session_id": sessionId,
+            "conversation_mode": currentConversationMode,
+            "referenced_message_id": lastMessageId?.uuidString as Any,
+            "context": getRecentContext()
+        ]
 
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: json, options: .prettyPrinted)
@@ -41,28 +52,49 @@ class NetworkManager: ObservableObject {
                 print("HTTP Status Code: \(httpResponse.statusCode)")
 
                 if (200...299).contains(httpResponse.statusCode) {
-                    if let data = data,
-                       let jsonResponse = try? JSONSerialization.jsonObject(with: data, options: []) {
-                        DispatchQueue.main.async { [weak self] in
-                            guard let self = self else { return }
-                            if let responseDict = jsonResponse as? [String: Any],
-                               let responseText = responseDict["response"] as? String,
-                               let llmName = responseDict["llm"] as? String {
-                                print("Received llmName from server (single):", llmName)
-                                let llmMessage = Message(text: responseText, sender: llmName, senderName: self.getSenderName(for: llmName), timestamp: Date())
-                                self.messages.append(llmMessage)
-                            } else if let responseArray = jsonResponse as? [[String: Any]] {
-                                for responseDict in responseArray {
-                                    if let responseText = responseDict["response"] as? String,
-                                       let llmName = responseDict["llm"] as? String {
-                                        print("Received llmName from server (multiple):", llmName)
-                                        let llmMessage = Message(text: responseText, sender: llmName, senderName: self.getSenderName(for: llmName), timestamp: Date())
-                                        self.messages.append(llmMessage)
+                    if let data = data {
+                        print("Received raw response from server:")
+                        print(String(data: data, encoding: .utf8) ?? "Could not decode response")
+                        
+                        if let jsonResponse = try? JSONSerialization.jsonObject(with: data, options: []) {
+                            print("Parsed JSON response type: \(type(of: jsonResponse))")
+                            print("Parsed JSON response content: \(jsonResponse)")
+                            
+                            DispatchQueue.main.async { [weak self] in
+                                guard let self = self else { return }
+                                print("Current messages count before processing: \(self.messages.count)")
+                                
+                                if let responseDict = jsonResponse as? [String: Any],
+                                   let responseText = responseDict["response"] as? String,
+                                   let llmName = responseDict["llm"] as? String {
+                                    print("Processing single response from \(llmName)")
+                                    let llmMessage = Message(
+                                        text: responseText,
+                                        sender: llmName,
+                                        senderName: self.getSenderName(for: llmName),
+                                        timestamp: Date()
+                                    )
+                                    self.messages.append(llmMessage)
+                                } else if let responseArray = jsonResponse as? [[String: Any]] {
+                                    print("Processing array of \(responseArray.count) responses")
+                                    for responseDict in responseArray {
+                                        if let responseText = responseDict["response"] as? String,
+                                           let llmName = responseDict["llm"] as? String {
+                                            print("Processing array response from \(llmName)")
+                                            let llmMessage = Message(
+                                                text: responseText,
+                                                sender: llmName,
+                                                senderName: self.getSenderName(for: llmName),
+                                                timestamp: Date()
+                                            )
+                                            self.messages.append(llmMessage)
+                                        }
                                     }
                                 }
-                            } else {
-                                print("Error: Unexpected response format from server.")
+                                print("Current messages count after processing: \(self.messages.count)")
                             }
+                        } else {
+                            print("Failed to parse JSON response")
                         }
                     }
                 } else {
@@ -79,10 +111,32 @@ class NetworkManager: ObservableObject {
         }
         task.resume()
     }
+    
+    private func getRecentContext() -> [[String: Any]] {
+        let contextMessages = messages.suffix(5)
+        return contextMessages.map { message in
+            return [
+                "id": message.id.uuidString,
+                "text": message.text,
+                "sender": message.sender,
+                "senderName": message.senderName,
+                "timestamp": message.timestamp.timeIntervalSince1970,
+                "referencedMessageId": message.referencedMessageId?.uuidString as Any,
+                "messageIntent": message.messageIntent as Any
+            ]
+        }
+    }
 
-    func addMessage(text: String, sender: String, senderName: String) {
+    func addMessage(text: String, sender: String, senderName: String, referencedMessageId: UUID? = nil, messageIntent: String? = nil) {
         DispatchQueue.main.async {
-            let newMessage = Message(text: text, sender: sender, senderName: senderName, timestamp: Date())
+            let newMessage = Message(
+                text: text,
+                sender: sender,
+                senderName: senderName,
+                referencedMessageId: referencedMessageId,
+                conversationMode: self.currentConversationMode,
+                messageIntent: messageIntent
+            )
             self.messages.append(newMessage)
         }
     }

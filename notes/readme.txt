@@ -156,3 +156,27 @@ git commit -m "v0.1 - just before langchain and sqlite"
 
 git push -u origin main
 
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You are an expert at designing software. You have been given a task to design a chat application where three different LLMs from three different companies are all members within the same chat discussion. Consider using langchain/langgraph or microsoft autogen for this. the current design uses a swiftUI desktop app for the front end chat app and a python backend. this could all be placed in docker for more security. the most important thing is this needs to feel like a natural discussion between several people sitting around a table discussing or debating an idea.
+
+the logic i have so far is this. when i am chatting in the chat app, if i include @a, @c or @g in my message, it means i am directing my response to @a = claude, @c = chatgpt, a@ = gemini. ie "hey @g, what do you think of @c's response?" or "@a, could you do a web search for me on something" or "could you please summarize the paper, "agentic reasoning" in our local store, @a"
+
+if i do not include the the @ designator then the message is for everyone. if you can think of a better way to make this more natural, (sitting around a table and having a debate with others) then please let me know.
+
+here are a few things to consider:
+
+- turn taking logic
+- orchestrates message sending and receiving betwee and LLMs and user (me)
+- managing conversation state and history
+- and whatever else you decide needs to be done
+
+Here are three use cases of what this multi-LLM chat needs to be able to do.
+
+1. help write scientific research papers. You need to be able to do research online (ie, arxiv, google scholar, etc) and also access locally stored research papers (in pdf form) and interogate them. The three LLMs must be able to have debates on whatever topic or thought experiment is presented in the chat. The debates must seem like a real debate between people. i would like to tell the LLMs to debate with themselves for 3 rounds and then reach a conclusion from that round of debates. and then continue the debate or discussion.
+
+2. help write songs. this needs to include roleplaying with famous artists like lennon and mccartney. each LLM will represent a different artist. in additoin to just roleplaying, suggest other things that would help in the songwriting process
+
+3. help write a book, once again including roleplaying with a famous writer. an LLM will represent the writer or writers. once again, suggest other things in addition to just roleplaying.
+
