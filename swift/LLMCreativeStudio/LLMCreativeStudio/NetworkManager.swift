@@ -112,7 +112,7 @@ class NetworkManager: ObservableObject {
         task.resume()
     }
     
-    private func getRecentContext() -> [[String: Any]] {
+    func getRecentContext() -> [[String: Any]] {
         let contextMessages = messages.suffix(5)
         return contextMessages.map { message in
             return [
