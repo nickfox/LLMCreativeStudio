@@ -180,3 +180,42 @@ Here are three use cases of what this multi-LLM chat needs to be able to do.
 
 3. help write a book, once again including roleplaying with a famous writer. an LLM will represent the writer or writers. once again, suggest other things in addition to just roleplaying.
 
+
+
+
+all files must have full path of file as a comment on first line of file. is.
+# /Users/nickfox137/Documents/llm-creative-studio/python/main.py
+// /Users/nickfox137/Documents/llm-creative-studio/swift/LLMCreativeStudio/LLMCreativeStudio/ContentView.swift
+
+don't ever name files or directories with a space in the name, always use dashes or underlines or nothing at all, ie.
+files:
+ContentView.swift
+data_access.py
+directories:
+llm-creative-studio
+
+show me the project structure.
+changelog.md
+readme.md
+
+MCP sqlite integration!!!!!!!
+
+
+
+github..............
+
+execute a file? build from command line? (6 minutes in)
+https://www.youtube.com/watch?v=aIAxWr5ix1o
+
+
+COPY FILES UP TO PROJECT KNOWLEDGE.
+
+
+
+
+
+
+
+
+
+
