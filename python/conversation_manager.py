@@ -1,27 +1,44 @@
 # /Users/nickfox137/Documents/llm-creative-studio/python/conversation_manager.py
+"""
+Conversation Manager Module
+
+This module provides the central orchestration for multi-LLM conversations,
+handling message routing, conversation modes, and command processing.
+"""
 
 import asyncio
 import logging
 import json
-from typing import List, Dict, Any, Optional, Tuple
+import traceback
+from typing import List, Dict, Any, Optional, Tuple, Union, Set
 
 class ConversationManager:
     """
-    ConversationManager orchestrates conversations between multiple LLMs using AutoGen.
+    ConversationManager orchestrates conversations between multiple LLMs.
     
     This class serves as the primary interface for managing multi-LLM conversations
     with different modes (debate, creative, research) and handling turn-taking logic.
     
     Attributes:
         session_id (str): Unique identifier for the conversation session
-        agents (Dict[str, Agent]): Dictionary of AutoGen agents for each LLM
-        user_agent (UserProxyAgent): AutoGen agent representing the user
-        conversation_mode (str): Current conversation mode (debate, creative, research)
+        conversation_mode (str): Current conversation mode (debate, creative, research, open)
         current_task (str): Current task or topic being discussed
         conversation_history (List[Dict]): Complete history of the conversation
         active_roles (Dict[str, str]): Current role assignments for each LLM
         debug (bool): Whether to enable debug logging
+        mention_map (Dict[str, str]): Maps @mentions to LLM names
+        characters (Dict[str, str]): Maps character names to LLM names
+        llm_to_character (Dict[str, str]): Maps LLM names to character names
     """
+    
+    # Valid conversation modes
+    VALID_MODES = {"open", "debate", "creative", "research"}
+    
+    # Valid LLM identifiers
+    VALID_LLMS = {"claude", "chatgpt", "gemini"}
+    
+    # Valid roles that can be assigned to LLMs
+    VALID_ROLES = {"assistant", "debater", "creative", "researcher"}
     
     def __init__(self, session_id: str, debug: bool = False):
         """
@@ -38,11 +55,28 @@ class ConversationManager:
         self.conversation_history = []
         self.active_roles = {}  # Maps agent name to current role
         
+        # Map short codes to LLM names
+        self.mention_map = {
+            "@a": "claude",
+            "@c": "chatgpt",
+            "@g": "gemini",
+            "@claude": "claude",
+            "@chatgpt": "chatgpt",
+            "@gemini": "gemini"
+        }
+        
+        # Character assignments - will be populated when using characters
+        self.characters = {}  # Maps character name to LLM
+        self.llm_to_character = {}  # Maps LLM to character name
+        
         logging.info(f"ConversationManager initialized for session {session_id}")
     
     async def process_message(self, message: str, sender: str, target_llm: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Process a new message in the conversation.
+        
+        This central method handles routing messages to the appropriate LLMs based on
+        mentions, processing commands, and managing conversation state.
         
         Args:
             message (str): The message content
@@ -52,41 +86,46 @@ class ConversationManager:
         Returns:
             List[Dict[str, Any]]: List of response messages from the LLMs
         """
-        # Check for commands in the message
-        if sender == "user" and message.startswith("/"):
-            return await self._handle_command(message)
-        
-        # Parse @mentions if no explicit target is provided
-        if target_llm is None and "@" in message:
-            target_llm, message = self._parse_mentions(message)
-        
-        # Add message to conversation history
-        self.conversation_history.append({
-            "sender": sender,
-            "content": message,
-            "target": target_llm,
-            "timestamp": asyncio.get_event_loop().time()  # Use current time
-        })
-        
-        # Determine which LLMs should respond
-        responding_llms = [target_llm] if target_llm else list(self.active_roles.keys())
-        
-        # If no LLMs have been assigned roles yet, use default set
-        if not responding_llms or (len(responding_llms) == 1 and responding_llms[0] is None):
-            responding_llms = ["claude", "chatgpt", "gemini"]
-        
-        # Get responses from each LLM
-        responses = []
-        for llm_name in responding_llms:
-            llm_response = await self._get_llm_response(llm_name, message, sender)
-            responses.append({
-                "llm": llm_name,
-                "response": llm_response,
-                "referenced_message_id": None,  # We'll implement this later
-                "message_intent": "response"  # Default intent
+        try:
+            # Check for commands in the message
+            if sender == "user" and message.startswith("/"):
+                return await self._handle_command(message)
+            
+            # Parse @mentions or character names if no explicit target is provided
+            if target_llm is None:
+                target_llm, message = self._parse_addressing(message)
+            
+            # Add message to conversation history
+            self.conversation_history.append({
+                "sender": sender,
+                "content": message,
+                "target": target_llm,
+                "timestamp": asyncio.get_event_loop().time()  # Use current time
             })
+            
+            # Determine which LLMs should respond
+            responding_llms = [target_llm] if target_llm else list(self.active_roles.keys())
         
-        return responses
+            # If no LLMs have been assigned roles yet, use default set
+            if not responding_llms or (len(responding_llms) == 1 and responding_llms[0] is None):
+                responding_llms = ["claude", "chatgpt", "gemini"]
+            
+            # Get responses from each LLM
+            responses = []
+            for llm_name in responding_llms:
+                llm_response = await self._get_llm_response(llm_name, message, sender)
+                responses.append({
+                    "llm": llm_name,
+                    "response": llm_response,
+                    "referenced_message_id": None,  # We'll implement this later
+                    "message_intent": "response"  # Default intent
+                })
+            
+            return responses
+        except Exception as e:
+            error_msg = f"Error processing message: {str(e)}"
+            logging.exception(error_msg)
+            return [{"llm": "system", "response": f"Error: {error_msg}"}]
     
     async def _get_llm_response(self, llm_name: str, message: str, sender: str) -> str:
         """
@@ -102,46 +141,61 @@ class ConversationManager:
         """
         logging.info(f"Getting response from {llm_name} for message: {message[:50]}...")
         
-        # Get the LLM instance based on the name
-        llm = None
-        if llm_name == "claude":
-            from llms import Claude
-            llm = Claude()
-        elif llm_name == "chatgpt":
-            from llms import ChatGPT
-            llm = ChatGPT()
-        elif llm_name == "gemini":
-            from llms import Gemini
-            llm = Gemini()
-        else:
-            return f"Error: LLM {llm_name} not found"
-        
-        # Get the current role for this LLM
-        role = self.active_roles.get(llm_name, "assistant")
-        
-        # Construct context from conversation history
-        context = self._build_context_for_llm(llm_name)
-        
-        # Get response using AutoGen
         try:
+            # Get the LLM instance based on the name
+            llm = None
+            if llm_name == "claude":
+                from llms import Claude
+                llm = Claude()
+            elif llm_name == "chatgpt":
+                from llms import ChatGPT
+                llm = ChatGPT()
+            elif llm_name == "gemini":
+                from llms import Gemini
+                llm = Gemini()
+            else:
+                return f"Error: LLM {llm_name} not found"
+            
+            # Check if this LLM has a character assigned
+            character_name = self.llm_to_character.get(llm_name)
+            
+            # Get the current role for this LLM
+            role = self.active_roles.get(llm_name, "assistant")
+            
+            # Construct context from conversation history
+            context = self._build_context_for_llm(llm_name)
+            
+            # Prepare character context if applicable
+            if character_name:
+                character_context = f"You are roleplaying as {character_name}. Respond in character."
+                message = f"{character_context}\n\n{message}"
+            
+            # Get response using AutoGen
             response = await llm.autogen_response(message, role)
+            
+            # Add to conversation history
+            self.conversation_history.append({
+                "sender": character_name if character_name else llm_name,
+                "content": response,
+                "target": sender,
+                "timestamp": asyncio.get_event_loop().time(),
+                "llm": llm_name  # Store the actual LLM for reference
+            })
+            
+            return response
+            
         except Exception as e:
-            logging.exception(f"Error getting response from {llm_name}: {e}")
-            response = f"Error: Failed to get response from {llm_name}. {str(e)}"
-        
-        # Add to conversation history
-        self.conversation_history.append({
-            "sender": llm_name,
-            "content": response,
-            "target": sender,
-            "timestamp": asyncio.get_event_loop().time()
-        })
-        
-        return response
+            error_msg = f"Error getting response from {llm_name}: {str(e)}"
+            logging.exception(error_msg)
+            logging.error(traceback.format_exc())
+            return f"Error: Failed to get response from {llm_name}. {str(e)}"
     
     def _build_context_for_llm(self, llm_name: str) -> str:
         """
         Build conversation context for a specific LLM.
+        
+        This method creates a context string that provides the LLM with information
+        about the recent conversation history, current mode, and role assignments.
         
         Args:
             llm_name (str): Name of the LLM to build context for
@@ -149,14 +203,22 @@ class ConversationManager:
         Returns:
             str: Formatted conversation context
         """
-        # Get recent conversation history (last 10 messages)
-        recent_history = self.conversation_history[-10:] if len(self.conversation_history) > 10 else self.conversation_history
+        # Calculate appropriate history length based on conversation length
+        # For longer conversations, include more context
+        history_length = min(10, max(5, len(self.conversation_history) // 2))
+        recent_history = self.conversation_history[-history_length:] if len(self.conversation_history) > history_length else self.conversation_history
+        
+        # If this LLM has a character, use that in the context
+        character_info = ""
+        if llm_name in self.llm_to_character:
+            character_name = self.llm_to_character[llm_name]
+            character_info = f"\nYou are roleplaying as {character_name}. Respond in character.\n"
         
         context_lines = [
-            "Recent conversation:",
-            f"Current mode: {self.conversation_mode}",
+            f"Conversation mode: {self.conversation_mode.capitalize()}",
             f"Current topic: {self.current_task}",
-            ""
+            character_info,
+            "Recent conversation:"
         ]
         
         for msg in recent_history:
@@ -164,31 +226,50 @@ class ConversationManager:
             content = msg["content"]
             target = msg.get("target", "everyone")
             
+            # Use character names where appropriate
+            display_sender = sender
+            if sender in self.llm_to_character:
+                display_sender = self.llm_to_character[sender]
+            
+            display_target = target
+            if target in self.llm_to_character:
+                display_target = self.llm_to_character[target]
+            
             # Format based on who was speaking and to whom
-            if target == "everyone":
-                context_lines.append(f"{sender}: {content}")
+            if target == "everyone" or target is None:
+                context_lines.append(f"{display_sender}: {content}")
             else:
-                context_lines.append(f"{sender} (to {target}): {content}")
+                context_lines.append(f"{display_sender} (to {display_target}): {content}")
         
         return "\n".join(context_lines)
     
-    def _parse_mentions(self, message: str) -> Tuple[Optional[str], str]:
+    def _parse_addressing(self, message: str) -> Tuple[Optional[str], str]:
         """
-        Parse @mentions in the message to determine target LLM.
+        Parse addressing in the message to determine target LLM.
+        
+        This handles both @mentions and character names if character mode is active.
         
         Args:
-            message (str): Original message with possible @mentions
+            message (str): Original message with possible @mentions or character names
             
         Returns:
             Tuple[Optional[str], str]: (target_llm, cleaned_message)
         """
-        # Simple @mention parsing logic
-        if "@a" in message:
-            return "claude", message.replace("@a", "").strip()
-        elif "@c" in message:
-            return "chatgpt", message.replace("@c", "").strip()
-        elif "@g" in message:
-            return "gemini", message.replace("@g", "").strip()
+        # First check for @mentions
+        for mention, llm in self.mention_map.items():
+            if mention in message:
+                return llm, message.replace(mention, "").strip()
+        
+        # Then check for character addressing if characters are defined
+        if self.characters:
+            # This is a simple approach - would need refinement for real NLP addressing
+            for character_name, llm in self.characters.items():
+                # Check if message starts with character name (case insensitive)
+                if message.lower().startswith(character_name.lower() + ",") or \
+                   message.lower().startswith(character_name.lower() + " "):
+                    # Remove the character name from the beginning of the message
+                    cleaned = message[len(character_name):].lstrip(" ,")
+                    return llm, cleaned
         
         # No specific target
         return None, message
@@ -203,37 +284,58 @@ class ConversationManager:
         Returns:
             List[Dict[str, Any]]: Response messages
         """
-        parts = command.split()
-        cmd = parts[0].lower()
-        
-        if cmd == "/debate":
-            # Start a debate session
-            rounds = int(parts[1]) if len(parts) > 1 else 3
-            return await self._start_debate_mode(rounds, " ".join(parts[2:]))
-        
-        elif cmd == "/role":
-            # Assign roles to LLMs
-            if len(parts) < 3:
-                return [{"llm": "system", "response": "Usage: /role [llm] [role]"}]
+        try:
+            parts = command.split()
+            cmd = parts[0].lower()
             
-            llm = parts[1].lower()
-            role = parts[2].lower()
-            return await self._assign_role(llm, role)
-        
-        elif cmd == "/mode":
-            # Switch conversation mode
-            if len(parts) < 2:
-                return [{"llm": "system", "response": "Usage: /mode [debate|creative|research]"}]
+            if cmd == "/debate":
+                # Start a debate session
+                rounds = int(parts[1]) if len(parts) > 1 else 3
+                return await self._start_debate_mode(rounds, " ".join(parts[2:]))
             
-            mode = parts[1].lower()
-            return await self._set_conversation_mode(mode)
+            elif cmd == "/role":
+                # Assign roles to LLMs
+                if len(parts) < 3:
+                    return [{"llm": "system", "response": "Usage: /role [llm] [role]"}]
+                
+                llm = parts[1].lower()
+                role = parts[2].lower()
+                return await self._assign_role(llm, role)
             
-        elif cmd == "/help":
-            # Show available commands and mention syntax
-            return [{"llm": "system", "response": self._get_help_text()}]
-        
-        # Default response for unknown command
-        return [{"llm": "system", "response": f"Unknown command: {cmd}\nType /help to see available commands."}]
+            elif cmd == "/mode":
+                # Switch conversation mode
+                if len(parts) < 2:
+                    return [{"llm": "system", "response": "Usage: /mode [debate|creative|research]"}]
+                
+                mode = parts[1].lower()
+                return await self._set_conversation_mode(mode)
+            
+            elif cmd == "/character":
+                # Assign a character to an LLM
+                if len(parts) < 3:
+                    return [{"llm": "system", "response": "Usage: /character [llm] [character_name]"}]
+                
+                llm = parts[1].lower()
+                character_name = " ".join(parts[2:])
+                return self._assign_character(llm, character_name)
+            
+            elif cmd == "/clear_characters":
+                # Clear all character assignments
+                self.characters = {}
+                self.llm_to_character = {}
+                return [{"llm": "system", "response": "All character assignments cleared."}]
+                
+            elif cmd == "/help":
+                # Show available commands and mention syntax
+                return [{"llm": "system", "response": self._get_help_text()}]
+            
+            # Default response for unknown command
+            return [{"llm": "system", "response": f"Unknown command: {cmd}\nType /help to see available commands."}]
+            
+        except Exception as e:
+            error_msg = f"Error processing command {command}: {str(e)}"
+            logging.exception(error_msg)
+            return [{"llm": "system", "response": f"Error: {error_msg}"}]
     
     async def _start_debate_mode(self, rounds: int, topic: str) -> List[Dict[str, Any]]:
         """
@@ -269,11 +371,19 @@ class ConversationManager:
             List[Dict[str, Any]]: Confirmation message
         """
         # Validate LLM name
-        valid_llms = ["claude", "chatgpt", "gemini"]
-        if llm not in valid_llms:
+        if llm not in self.VALID_LLMS:
             return [{
                 "llm": "system",
-                "response": f"Unknown LLM: {llm}. Available options: {', '.join(valid_llms)}",
+                "response": f"Unknown LLM: {llm}. Available options: {', '.join(self.VALID_LLMS)}",
+                "referenced_message_id": None,
+                "message_intent": "system"
+            }]
+        
+        # Validate role
+        if role not in self.VALID_ROLES:
+            return [{
+                "llm": "system",
+                "response": f"Invalid role: {role}. Available options: {', '.join(self.VALID_ROLES)}",
                 "referenced_message_id": None,
                 "message_intent": "system"
             }]
@@ -281,9 +391,14 @@ class ConversationManager:
         # Update the role
         self.active_roles[llm] = role
         
+        # Get character name if assigned
+        character_display = ""
+        if llm in self.llm_to_character:
+            character_display = f" (as {self.llm_to_character[llm]})"
+        
         return [{
             "llm": "system",
-            "response": f"Assigned role '{role}' to {llm.capitalize()}",
+            "response": f"Assigned role '{role}' to {llm.capitalize()}{character_display}",
             "referenced_message_id": None,
             "message_intent": "system"
         }]
@@ -293,29 +408,78 @@ class ConversationManager:
         Set the conversation mode.
         
         Args:
-            mode (str): Mode to set (debate, creative, research)
+            mode (str): Mode to set (debate, creative, research, open)
             
         Returns:
             List[Dict[str, Any]]: Confirmation message
         """
-        valid_modes = ["debate", "creative", "research", "open"]
-        if mode not in valid_modes:
+        if mode not in self.VALID_MODES:
             return [{
                 "llm": "system",
-                "response": f"Invalid mode: {mode}. Valid options: {', '.join(valid_modes)}",
+                "response": f"Invalid mode: {mode}. Valid options: {', '.join(self.VALID_MODES)}",
                 "referenced_message_id": None,
                 "message_intent": "system"
             }]
         
+        old_mode = self.conversation_mode
         self.conversation_mode = mode
+        
+        # If switching to creative mode and we have characters, remind the user
+        character_info = ""
+        if mode == "creative" and self.characters:
+            character_names = [f"{name} ({llm})" for name, llm in self.characters.items()]
+            character_info = f"\n\nActive characters: {', '.join(character_names)}"
         
         return [{
             "llm": "system",
-            "response": f"Switched to {mode} mode",
+            "response": f"Switched from {old_mode} mode to {mode} mode{character_info}",
             "referenced_message_id": None,
             "message_intent": "system"
         }]
         
+    def _assign_character(self, llm: str, character_name: str) -> List[Dict[str, Any]]:
+        """
+        Assign a character to an LLM for roleplay.
+        
+        Args:
+            llm (str): LLM to assign the character to
+            character_name (str): Name of the character to assign
+            
+        Returns:
+            List[Dict[str, Any]]: Confirmation message
+        """
+        # Validate LLM name
+        if llm not in self.VALID_LLMS:
+            return [{
+                "llm": "system",
+                "response": f"Unknown LLM: {llm}. Available options: {', '.join(self.VALID_LLMS)}",
+                "referenced_message_id": None,
+                "message_intent": "system"
+            }]
+        
+        # Clear any existing assignment for this character name
+        for existing_char, existing_llm in list(self.characters.items()):
+            if existing_char.lower() == character_name.lower():
+                del self.characters[existing_char]
+                break
+        
+        # Clear any existing character for this LLM
+        if llm in self.llm_to_character:
+            old_character = self.llm_to_character[llm]
+            if old_character in self.characters:
+                del self.characters[old_character]
+        
+        # Assign the character
+        self.characters[character_name] = llm
+        self.llm_to_character[llm] = character_name
+        
+        return [{
+            "llm": "system",
+            "response": f"Assigned character '{character_name}' to {llm.capitalize()}",
+            "referenced_message_id": None,
+            "message_intent": "system"
+        }]
+    
     def _get_help_text(self) -> str:
         """
         Generate help text explaining available commands and @ designators.
@@ -331,6 +495,7 @@ class ConversationManager:
 - `@c` or `@chatgpt` - Direct message to ChatGPT only
 - `@g` or `@gemini` - Direct message to Gemini only
 - No @ mention - Message goes to all LLMs
+- When using characters, simply address them by name: "John, what do you think about..."
 
 ### Special Commands
 - `/debate [rounds] [topic]` - Start a structured debate with specified number of rounds on a topic
@@ -344,11 +509,24 @@ class ConversationManager:
   Available modes: open, debate, creative, research
   Example: `/mode creative`
 
+- `/character [llm] [character_name]` - Assign a character to an LLM for roleplay
+  Example: `/character claude John Lennon` or `/character chatgpt Paul McCartney`
+
+- `/clear_characters` - Remove all character assignments
+
 - `/help` - Show this help message
 
 ### Examples
 - "@a Can you research quantum computing papers?"
-- "@c What do you think about @g's response?"
+- "John, what do you think about this melody?"
 - "/debate 2 Climate change solutions"
 """
+        
+        # Add character info if any characters are assigned
+        if self.characters:
+            character_list = "\n### Current Characters\n"
+            for character, llm in self.characters.items():
+                character_list += f"- {character} ({llm})\n"
+            help_text += character_list
+            
         return help_text

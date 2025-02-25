@@ -1,0 +1,305 @@
+2025-02-25 18:42:45,869 - root - INFO - Starting test run, logging to /Users/nickfox137/Documents/llm-creative-studio/python/tests/../logs/test_run_20250225_184245.log
+2025-02-25 18:42:46,364 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'PIL'
+2025-02-25 18:42:46,364 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'PIL'
+2025-02-25 18:42:46,366 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'cerebras'
+2025-02-25 18:42:46,366 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'google.genai'
+2025-02-25 18:42:46,367 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'mistralai'
+2025-02-25 18:42:46,367 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'together'
+2025-02-25 18:42:46,367 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'groq'
+2025-02-25 18:42:46,367 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'cohere'
+2025-02-25 18:42:46,367 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'ollama'
+2025-02-25 18:42:46,368 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'botocore'
+2025-02-25 18:42:46,394 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'flaml'
+2025-02-25 18:42:46,472 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'matplotlib'
+2025-02-25 18:42:46,473 - autogen.import_utils - DEBUG - Ignoring ImportError: No module named 'llmlingua'
+2025-02-25 18:42:46,798 - data_access - INFO - Documents table created (or already exists).
+2025-02-25 18:42:46,798 - root - INFO - Database tables created or verified
+2025-02-25 18:42:46,798 - root - INFO - ProjectManager initialized
+2025-02-25 18:42:46,813 - root - INFO - Running test: test_chat_endpoint
+2025-02-25 18:42:46,818 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,819 - root - INFO - Received request: llm_name=claude, message=Hello, Claude!, user_name=Test User, session_id=test-session, project_id=None
+2025-02-25 18:42:46,819 - root - INFO - ConversationManager initialized for session test-session
+2025-02-25 18:42:46,819 - root - INFO - Created new ConversationManager for session test-session
+2025-02-25 18:42:46,821 - root - INFO - Relevant files: []
+2025-02-25 18:42:46,822 - root - INFO - Getting response from claude for message: Hello, Claude!...
+2025-02-25 18:42:46,824 - httpx - INFO - HTTP Request: POST http://testserver/chat "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,825 - root - INFO - Completed test: test_chat_endpoint
+2025-02-25 18:42:46,825 - root - INFO - Running test: test_chat_with_project
+2025-02-25 18:42:46,826 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,826 - root - INFO - Received request: llm_name=claude, message=Hello, Claude!, user_name=Test User, session_id=test-session, project_id=test-project-id
+2025-02-25 18:42:46,826 - root - INFO - ConversationManager initialized for session test-session
+2025-02-25 18:42:46,826 - root - INFO - Created new ConversationManager for session test-session
+2025-02-25 18:42:46,826 - root - INFO - Loaded 1 characters for project test-project-id
+2025-02-25 18:42:46,828 - root - INFO - Relevant files: []
+2025-02-25 18:42:46,828 - root - INFO - Getting response from claude for message: Hello, Claude!...
+2025-02-25 18:42:46,829 - root - INFO - Saved conversation state for project test-project-id, session test-session
+2025-02-25 18:42:46,829 - httpx - INFO - HTTP Request: POST http://testserver/chat "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,829 - root - INFO - Completed test: test_chat_with_project
+2025-02-25 18:42:46,829 - root - INFO - Running test: test_chat_command
+2025-02-25 18:42:46,830 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,831 - root - INFO - Received request: llm_name=system, message=/help, user_name=Test User, session_id=test-session, project_id=None
+2025-02-25 18:42:46,831 - root - INFO - ConversationManager initialized for session test-session
+2025-02-25 18:42:46,831 - root - INFO - Created new ConversationManager for session test-session
+2025-02-25 18:42:46,833 - httpx - INFO - HTTP Request: POST http://testserver/chat "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,833 - root - INFO - Completed test: test_chat_command
+2025-02-25 18:42:46,833 - root - INFO - Running test: test_conversation_modes_endpoint
+2025-02-25 18:42:46,834 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,834 - httpx - INFO - HTTP Request: GET http://testserver/conversation_modes "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,835 - root - INFO - Completed test: test_conversation_modes_endpoint
+2025-02-25 18:42:46,835 - root - INFO - Running test: test_clear_session_endpoint
+2025-02-25 18:42:46,837 - root - INFO - ConversationManager initialized for session test-session
+2025-02-25 18:42:46,837 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,837 - root - INFO - Cleared conversation manager for session test-session
+2025-02-25 18:42:46,838 - root - INFO - Cleared message history for session test-session
+2025-02-25 18:42:46,839 - httpx - INFO - HTTP Request: DELETE http://testserver/sessions/test-session "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,839 - root - INFO - Completed test: test_clear_session_endpoint
+2025-02-25 18:42:46,839 - root - INFO - Running test: test_restore_session_endpoint
+2025-02-25 18:42:46,840 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,840 - root - INFO - ConversationManager initialized for session test-session
+2025-02-25 18:42:46,840 - httpx - INFO - HTTP Request: POST http://testserver/sessions/test-project-id/restore/test-session "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,841 - root - INFO - Completed test: test_restore_session_endpoint
+2025-02-25 18:42:46,841 - root - INFO - Running test: test_list_projects_endpoint
+2025-02-25 18:42:46,841 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,842 - httpx - INFO - HTTP Request: GET http://testserver/projects "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,842 - root - INFO - Completed test: test_list_projects_endpoint
+2025-02-25 18:42:46,842 - root - INFO - Running test: test_create_project_endpoint
+2025-02-25 18:42:46,843 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,844 - httpx - INFO - HTTP Request: POST http://testserver/projects "HTTP/1.1 201 Created"
+2025-02-25 18:42:46,844 - root - INFO - Completed test: test_create_project_endpoint
+2025-02-25 18:42:46,844 - root - INFO - Running test: test_get_project_endpoint
+2025-02-25 18:42:46,845 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,845 - httpx - INFO - HTTP Request: GET http://testserver/projects/test-project-id "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,846 - root - INFO - Completed test: test_get_project_endpoint
+2025-02-25 18:42:46,846 - root - INFO - Running test: test_update_project_endpoint
+2025-02-25 18:42:46,846 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,847 - httpx - INFO - HTTP Request: PUT http://testserver/projects/test-project-id "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,848 - root - INFO - Completed test: test_update_project_endpoint
+2025-02-25 18:42:46,848 - root - INFO - Running test: test_delete_project_endpoint
+2025-02-25 18:42:46,848 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,849 - httpx - INFO - HTTP Request: DELETE http://testserver/projects/test-project-id "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,849 - root - INFO - Completed test: test_delete_project_endpoint
+2025-02-25 18:42:46,849 - root - INFO - Running test: test_add_character_endpoint
+2025-02-25 18:42:46,850 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,851 - httpx - INFO - HTTP Request: POST http://testserver/projects/test-project-id/characters "HTTP/1.1 201 Created"
+2025-02-25 18:42:46,851 - root - INFO - Completed test: test_add_character_endpoint
+2025-02-25 18:42:46,851 - root - INFO - Running test: test_get_project_characters_endpoint
+2025-02-25 18:42:46,852 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,852 - httpx - INFO - HTTP Request: GET http://testserver/projects/test-project-id/characters "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,852 - root - INFO - Completed test: test_get_project_characters_endpoint
+2025-02-25 18:42:46,852 - root - INFO - Running test: test_delete_character_endpoint
+2025-02-25 18:42:46,853 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,853 - httpx - INFO - HTTP Request: DELETE http://testserver/projects/test-project-id/characters/test-character-id "HTTP/1.1 200 OK"
+2025-02-25 18:42:46,854 - root - INFO - Completed test: test_delete_character_endpoint
+2025-02-25 18:42:46,854 - root - INFO - Running test: test_process_message_no_target
+2025-02-25 18:42:46,854 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,854 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,854 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,854 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,855 - root - INFO - Completed test: test_process_message_no_target
+2025-02-25 18:42:46,855 - root - INFO - Running test: test_process_message_with_target
+2025-02-25 18:42:46,855 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,855 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,855 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,855 - root - INFO - Completed test: test_process_message_with_target
+2025-02-25 18:42:46,855 - root - INFO - Running test: test_parse_addressing_mention
+2025-02-25 18:42:46,855 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,855 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,856 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,856 - root - INFO - Completed test: test_parse_addressing_mention
+2025-02-25 18:42:46,856 - root - INFO - Running test: test_parse_addressing_character
+2025-02-25 18:42:46,856 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,856 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,856 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,856 - root - INFO - Completed test: test_parse_addressing_character
+2025-02-25 18:42:46,856 - root - INFO - Running test: test_get_llm_response
+2025-02-25 18:42:46,857 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,857 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,857 - root - INFO - Getting response from claude for message: Hello, Claude!...
+2025-02-25 18:42:46,857 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,857 - root - INFO - Completed test: test_get_llm_response
+2025-02-25 18:42:46,857 - root - INFO - Running test: test_handle_command_debate
+2025-02-25 18:42:46,857 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,857 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,858 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,858 - root - INFO - Completed test: test_handle_command_debate
+2025-02-25 18:42:46,858 - root - INFO - Running test: test_handle_command_role
+2025-02-25 18:42:46,858 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,858 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,859 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,859 - root - INFO - Completed test: test_handle_command_role
+2025-02-25 18:42:46,859 - root - INFO - Running test: test_handle_command_mode
+2025-02-25 18:42:46,859 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,859 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,859 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,859 - root - INFO - Completed test: test_handle_command_mode
+2025-02-25 18:42:46,859 - root - INFO - Running test: test_handle_command_character
+2025-02-25 18:42:46,860 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,860 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,860 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,860 - root - INFO - Completed test: test_handle_command_character
+2025-02-25 18:42:46,860 - root - INFO - Running test: test_handle_command_help
+2025-02-25 18:42:46,860 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,860 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,861 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,861 - root - INFO - Completed test: test_handle_command_help
+2025-02-25 18:42:46,861 - root - INFO - Running test: test_assign_character
+2025-02-25 18:42:46,861 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,861 - root - INFO - Completed test: test_assign_character
+2025-02-25 18:42:46,861 - root - INFO - Running test: test_assign_role
+2025-02-25 18:42:46,861 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,861 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,861 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,862 - root - INFO - Completed test: test_assign_role
+2025-02-25 18:42:46,862 - root - INFO - Running test: test_set_conversation_mode
+2025-02-25 18:42:46,862 - root - INFO - ConversationManager initialized for session test_session
+2025-02-25 18:42:46,862 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,862 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,862 - root - INFO - Completed test: test_set_conversation_mode
+2025-02-25 18:42:46,862 - root - INFO - Running test: test_format_context_prompt
+2025-02-25 18:42:46,862 - root - INFO - Completed test: test_format_context_prompt
+2025-02-25 18:42:46,863 - root - INFO - Running test: test_chatgpt_response_with_context
+2025-02-25 18:42:46,863 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:46,888 - openai._base_client - DEBUG - Request options: {'method': 'post', 'url': '/chat/completions', 'files': None, 'json_data': {'messages': [{'content': 'What do you think about this?', 'role': 'user'}, {'content': 'I believe we should consider...', 'role': 'assistant'}, {'content': "Recent conversation context:\nnick asked: What do you think about this?\nChatGPT said: I believe we should consider...\n\nGiven this context, please respond to: What's your take on this?\n\nRemember to acknowledge and reference previous speakers naturally when appropriate.", 'role': 'user'}], 'model': 'gpt-3.5-turbo', 'stream': False}}
+2025-02-25 18:42:46,889 - httpcore.connection - DEBUG - connect_tcp.started host='api.openai.com' port=443 local_address=None timeout=None socket_options=None
+2025-02-25 18:42:46,916 - httpcore.connection - DEBUG - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x11c55f4d0>
+2025-02-25 18:42:46,916 - httpcore.connection - DEBUG - start_tls.started ssl_context=<ssl.SSLContext object at 0x11c4ad2e0> server_hostname='api.openai.com' timeout=None
+2025-02-25 18:42:46,926 - httpcore.connection - DEBUG - start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x11c476990>
+2025-02-25 18:42:46,926 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2025-02-25 18:42:46,927 - httpcore.http11 - DEBUG - send_request_headers.complete
+2025-02-25 18:42:46,927 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2025-02-25 18:42:46,927 - httpcore.http11 - DEBUG - send_request_body.complete
+2025-02-25 18:42:46,927 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2025-02-25 18:42:47,781 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Tue, 25 Feb 2025 17:42:47 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'access-control-expose-headers', b'X-Request-ID'), (b'openai-organization', b'user-uz3s0abntruquykvvtxyfagp'), (b'openai-processing-ms', b'470'), (b'openai-version', b'2020-10-01'), (b'x-ratelimit-limit-requests', b'10000'), (b'x-ratelimit-limit-tokens', b'200000'), (b'x-ratelimit-remaining-requests', b'9999'), (b'x-ratelimit-remaining-tokens', b'199898'), (b'x-ratelimit-reset-requests', b'8.64s'), (b'x-ratelimit-reset-tokens', b'30ms'), (b'x-request-id', b'req_88826ae430d7a48c86053907a266a8de'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'cf-cache-status', b'DYNAMIC'), (b'Set-Cookie', b'__cf_bm=onCZRq6sBJqZd.ikZ.jPlfhQHY8WwJVACg484FTvVhM-1740505367-1.0.1.1-LrQUhoSevV8Sj_9m4yZFLUzR658aCWRCxyyPOG5I11xYC0.leWjprk5JY9ThCZcRl4Nw3BjeVtXnDGUkYcP_Yw; path=/; expires=Tue, 25-Feb-25 18:12:47 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None'), (b'X-Content-Type-Options', b'nosniff'), (b'Set-Cookie', b'_cfuvid=5r83.Esv4LMBvkk76aamYzWDlDljpT30NFjZ7lQJZLc-1740505367817-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None'), (b'Server', b'cloudflare'), (b'CF-RAY', b'91797e6f9a9c11ad-MRS'), (b'Content-Encoding', b'gzip'), (b'alt-svc', b'h3=":443"; ma=86400')])
+2025-02-25 18:42:47,783 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-25 18:42:47,784 - httpcore.http11 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2025-02-25 18:42:47,804 - httpcore.http11 - DEBUG - receive_response_body.complete
+2025-02-25 18:42:47,804 - httpcore.http11 - DEBUG - response_closed.started
+2025-02-25 18:42:47,805 - httpcore.http11 - DEBUG - response_closed.complete
+2025-02-25 18:42:47,805 - openai._base_client - DEBUG - HTTP Request: POST https://api.openai.com/v1/chat/completions "200 OK"
+2025-02-25 18:42:47,820 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:47,820 - root - INFO - Completed test: test_chatgpt_response_with_context
+2025-02-25 18:42:47,820 - root - INFO - Running test: test_claude_response_with_context
+2025-02-25 18:42:47,821 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:47,834 - anthropic._base_client - DEBUG - Request options: {'method': 'post', 'url': '/v1/messages', 'files': None, 'json_data': {'max_tokens': 1024, 'messages': [{'role': 'user', 'content': 'What do you think about this?'}, {'role': 'assistant', 'content': 'I believe we should consider...'}, {'role': 'user', 'content': 'Recent conversation context:\nnick asked: What do you think about this?\nChatGPT said: I believe we should consider...\n\nGiven this context, please respond to: Can you elaborate on that?\n\nRemember to acknowledge and reference previous speakers naturally when appropriate.'}], 'model': 'claude-3-haiku-20240307'}}
+2025-02-25 18:42:47,834 - httpcore.connection - DEBUG - connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=None socket_options=None
+2025-02-25 18:42:47,875 - httpcore.connection - DEBUG - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x11c5c8190>
+2025-02-25 18:42:47,875 - httpcore.connection - DEBUG - start_tls.started ssl_context=<ssl.SSLContext object at 0x11c4ad5b0> server_hostname='api.anthropic.com' timeout=None
+2025-02-25 18:42:47,888 - httpcore.connection - DEBUG - start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x11c3fec40>
+2025-02-25 18:42:47,888 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2025-02-25 18:42:47,888 - httpcore.http11 - DEBUG - send_request_headers.complete
+2025-02-25 18:42:47,888 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2025-02-25 18:42:47,888 - httpcore.http11 - DEBUG - send_request_body.complete
+2025-02-25 18:42:47,888 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2025-02-25 18:42:49,551 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Tue, 25 Feb 2025 17:42:49 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-02-25T17:42:49Z'), (b'anthropic-ratelimit-input-tokens-limit', b'50000'), (b'anthropic-ratelimit-input-tokens-remaining', b'50000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-02-25T17:42:48Z'), (b'anthropic-ratelimit-output-tokens-limit', b'10000'), (b'anthropic-ratelimit-output-tokens-remaining', b'10000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-02-25T17:42:49Z'), (b'anthropic-ratelimit-tokens-limit', b'60000'), (b'anthropic-ratelimit-tokens-remaining', b'60000'), (b'anthropic-ratelimit-tokens-reset', b'2025-02-25T17:42:48Z'), (b'request-id', b'req_01Y2iSPNcw6U3HnGM23S6BfG'), (b'anthropic-organization-id', b'3277caa0-8496-4198-9e41-75f3a2e75fb0'), (b'via', b'1.1 google'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'91797e759852e165-MRS'), (b'Content-Encoding', b'gzip')])
+2025-02-25 18:42:49,552 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-02-25 18:42:49,552 - httpcore.http11 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2025-02-25 18:42:49,553 - httpcore.http11 - DEBUG - receive_response_body.complete
+2025-02-25 18:42:49,553 - httpcore.http11 - DEBUG - response_closed.started
+2025-02-25 18:42:49,553 - httpcore.http11 - DEBUG - response_closed.complete
+2025-02-25 18:42:49,553 - anthropic._base_client - DEBUG - HTTP Request: POST https://api.anthropic.com/v1/messages "200 OK"
+2025-02-25 18:42:49,565 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:49,565 - root - INFO - Completed test: test_claude_response_with_context
+2025-02-25 18:42:49,565 - root - INFO - Running test: test_gemini_response_with_context
+2025-02-25 18:42:49,566 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:49,570 - grpc._cython.cygrpc - DEBUG - Using AsyncIOEngine.POLLER as I/O engine
+2025-02-25 18:42:49,578 - httpcore.connection - DEBUG - close.started
+2025-02-25 18:42:49,578 - httpcore.connection - DEBUG - close.failed exception=RuntimeError('Event loop is closed')
+2025-02-25 18:42:49,579 - asyncio - ERROR - Task exception was never retrieved
+future: <Task finished name='Task-88' coro=<AsyncClient.aclose() done, defined at /Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/httpx/_client.py:1978> exception=RuntimeError('Event loop is closed')>
+Traceback (most recent call last):
+  File "/Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/httpx/_client.py", line 1985, in aclose
+    await self._transport.aclose()
+  File "/Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 406, in aclose
+    await self._pool.aclose()
+  File "/Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/httpcore/_async/connection_pool.py", line 353, in aclose
+    await self._close_connections(closing_connections)
+  File "/Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/httpcore/_async/connection_pool.py", line 345, in _close_connections
+    await connection.aclose()
+  File "/Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/httpcore/_async/connection.py", line 173, in aclose
+    await self._connection.aclose()
+  File "/Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/httpcore/_async/http11.py", line 258, in aclose
+    await self._network_stream.aclose()
+  File "/Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/httpcore/_backends/anyio.py", line 53, in aclose
+    await self._stream.aclose()
+  File "/Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/anyio/streams/tls.py", line 201, in aclose
+    await self.transport_stream.aclose()
+  File "/Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py", line 1306, in aclose
+    self._transport.close()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/asyncio/selector_events.py", line 1205, in close
+    super().close()
+    ~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/asyncio/selector_events.py", line 865, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/asyncio/base_events.py", line 833, in call_soon
+    self._check_closed()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/asyncio/base_events.py", line 556, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+2025-02-25 18:42:51,942 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-02-25 18:42:51,944 - root - INFO - Completed test: test_gemini_response_with_context
+2025-02-25 18:42:51,945 - root - INFO - Running test: test_create_project
+2025-02-25 18:42:51,950 - root - INFO - Database tables created or verified
+2025-02-25 18:42:51,951 - root - INFO - ProjectManager initialized
+2025-02-25 18:42:51,952 - root - INFO - Created project: Test Project (ID: 2c24ae4b-9de7-4f13-a532-631b9e8c0ff1)
+2025-02-25 18:42:51,953 - root - INFO - Completed test: test_create_project
+2025-02-25 18:42:51,954 - root - INFO - Running test: test_list_projects
+2025-02-25 18:42:51,957 - root - INFO - Database tables created or verified
+2025-02-25 18:42:51,957 - root - INFO - ProjectManager initialized
+2025-02-25 18:42:51,958 - root - INFO - Created project: Project 1 (ID: 164ab070-cb7f-46a9-aac0-f12ae42b8f9b)
+2025-02-25 18:42:51,958 - root - INFO - Created project: Project 2 (ID: d21a5ebd-d62b-4d6d-aa00-468f771bb97d)
+2025-02-25 18:42:51,960 - root - INFO - Completed test: test_list_projects
+2025-02-25 18:42:51,960 - root - INFO - Running test: test_update_project
+2025-02-25 18:42:51,962 - root - INFO - Database tables created or verified
+2025-02-25 18:42:51,962 - root - INFO - ProjectManager initialized
+2025-02-25 18:42:51,963 - root - INFO - Created project: Original Name (ID: a5937402-b512-4c89-a641-f50e7bee81da)
+2025-02-25 18:42:51,963 - root - INFO - Updated project a5937402-b512-4c89-a641-f50e7bee81da
+2025-02-25 18:42:51,964 - root - INFO - Completed test: test_update_project
+2025-02-25 18:42:51,964 - root - INFO - Running test: test_delete_project
+2025-02-25 18:42:51,966 - root - INFO - Database tables created or verified
+2025-02-25 18:42:51,966 - root - INFO - ProjectManager initialized
+2025-02-25 18:42:51,967 - root - INFO - Created project: Project to Delete (ID: c9440298-3404-43f1-ade8-09f60b1648bc)
+2025-02-25 18:42:51,968 - root - INFO - Added character Test Character to project c9440298-3404-43f1-ade8-09f60b1648bc
+2025-02-25 18:42:51,968 - root - INFO - Deleted project c9440298-3404-43f1-ade8-09f60b1648bc
+2025-02-25 18:42:51,969 - root - INFO - Completed test: test_delete_project
+2025-02-25 18:42:51,969 - root - INFO - Running test: test_add_character
+2025-02-25 18:42:51,971 - root - INFO - Database tables created or verified
+2025-02-25 18:42:51,971 - root - INFO - ProjectManager initialized
+2025-02-25 18:42:51,972 - root - INFO - Created project: Character Test Project (ID: 680df88c-4b13-49ee-b393-12168181b0ee)
+2025-02-25 18:42:51,972 - root - INFO - Added character John Lennon to project 680df88c-4b13-49ee-b393-12168181b0ee
+2025-02-25 18:42:51,973 - root - INFO - Completed test: test_add_character
+2025-02-25 18:42:51,973 - root - INFO - Running test: test_delete_character
+2025-02-25 18:42:51,975 - root - INFO - Database tables created or verified
+2025-02-25 18:42:51,975 - root - INFO - ProjectManager initialized
+2025-02-25 18:42:51,976 - root - INFO - Created project: Character Delete Test (ID: 82cf9329-2ae7-4858-be59-e15dcd099f82)
+2025-02-25 18:42:51,976 - root - INFO - Added character Paul McCartney to project 82cf9329-2ae7-4858-be59-e15dcd099f82
+2025-02-25 18:42:51,977 - root - INFO - Deleted character 109e30c4-ada1-496d-9cbc-402a333536a7
+2025-02-25 18:42:51,978 - root - INFO - Completed test: test_delete_character
+2025-02-25 18:42:51,978 - root - INFO - Running test: test_add_project_file
+2025-02-25 18:42:51,980 - root - INFO - Database tables created or verified
+2025-02-25 18:42:51,980 - root - INFO - ProjectManager initialized
+2025-02-25 18:42:51,980 - root - INFO - Created project: File Test Project (ID: e20bac6b-6d15-42ef-8dc7-aa94a6fcea42)
+2025-02-25 18:42:51,981 - root - INFO - Added file test.pdf to project e20bac6b-6d15-42ef-8dc7-aa94a6fcea42
+2025-02-25 18:42:51,981 - root - INFO - Completed test: test_add_project_file
+2025-02-25 18:42:51,981 - root - INFO - Running test: test_delete_project_file
+2025-02-25 18:42:51,983 - root - INFO - Database tables created or verified
+2025-02-25 18:42:51,983 - root - INFO - ProjectManager initialized
+2025-02-25 18:42:51,983 - root - INFO - Created project: File Delete Test (ID: 7ddde34d-1839-4758-bbe0-168879958459)
+2025-02-25 18:42:51,984 - root - INFO - Added file delete_me.pdf to project 7ddde34d-1839-4758-bbe0-168879958459
+2025-02-25 18:42:51,984 - root - INFO - Deleted file 1903f715-c341-4ce5-b155-fede4a531778 from project 7ddde34d-1839-4758-bbe0-168879958459
+2025-02-25 18:42:51,985 - root - INFO - Completed test: test_delete_project_file
+2025-02-25 18:42:51,985 - root - INFO - Running test: test_save_and_load_session
+2025-02-25 18:42:51,986 - root - INFO - Database tables created or verified
+2025-02-25 18:42:51,986 - root - INFO - ProjectManager initialized
+2025-02-25 18:42:51,987 - root - INFO - Created project: Session Test (ID: 9b16a189-41ba-4ba8-b361-dd71654837c0)
+2025-02-25 18:42:51,987 - root - INFO - Saved session test_session_id for project 9b16a189-41ba-4ba8-b361-dd71654837c0
+2025-02-25 18:42:51,988 - root - INFO - Completed test: test_save_and_load_session
+2025-02-25 18:42:51,988 - root - INFO - Running test: test_delete_session
+2025-02-25 18:42:51,990 - root - INFO - Database tables created or verified
+2025-02-25 18:42:51,990 - root - INFO - ProjectManager initialized
+2025-02-25 18:42:51,990 - root - INFO - Created project: Session Delete Test (ID: d5196a86-6583-4eb2-93c9-50e3823dfbfb)
+2025-02-25 18:42:51,990 - root - INFO - Saved session delete_session_id for project d5196a86-6583-4eb2-93c9-50e3823dfbfb
+2025-02-25 18:42:51,991 - root - INFO - Deleted session delete_session_id
+2025-02-25 18:42:51,991 - root - INFO - Completed test: test_delete_session
