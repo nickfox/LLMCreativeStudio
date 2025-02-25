@@ -10,7 +10,7 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 # LLM Models
 CHATGPT_MODEL = "gpt-3.5-turbo"
-GEMINI_MODEL = "gemini-pro"
+GEMINI_MODEL = "gemini-1.5-flash"
 CLAUDE_MODEL = "claude-3-haiku-20240307"
 
 # Data Paths

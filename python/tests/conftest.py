@@ -1,8 +1,27 @@
-# /Users/nickfox137/Documents/llm-creative-studio/python/tests/conftest.py
-
 import pytest
-import os
-import sys
+import logging
 
-# Add the parent directory to the Python path so we can import our modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Additional test fixtures can be added here
+
+@pytest.fixture(autouse=True)
+def configure_logging():
+    """Configure logging for tests."""
+    for logger_name in [
+        'autogen.import_utils',
+        'httpcore',
+        'httpx',
+        'asyncio',
+        'grpc',
+        'openai',
+        'anthropic'
+    ]:
+        logging.getLogger(logger_name).setLevel(logging.INFO)
+    
+    # Completely suppress import errors
+    class ImportErrorFilter(logging.Filter):
+        def filter(self, record):
+            return "ImportError" not in record.getMessage()
+    
+    # Apply the filter
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(ImportErrorFilter())

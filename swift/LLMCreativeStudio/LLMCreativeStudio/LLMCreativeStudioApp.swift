@@ -5,31 +5,49 @@ import SwiftUI
 @main
 struct LLMCreativeStudioApp: App {
     @StateObject private var networkManager = NetworkManager() // Create it here.
-    @State private var sessionId: String = UUID().uuidString
 
     var body: some Scene {
         WindowGroup {
-            ContentView(sessionId: $sessionId) // Pass sessionId
+            ContentView() // No need to pass sessionId
                 .environmentObject(networkManager) // Inject NetworkManager
-                .background(Color.background) // Set the background color
-                .frame(minWidth: 400, minHeight: 600)
                 .onAppear {
                     NSWindow.allowsAutomaticWindowTabbing = false // Optional
                 }
         }
         .commands {  // Add the menu commands here
             CommandGroup(replacing: .newItem) {
-                // We'll leave the "New Window" command alone, but you could
-                // customize it if you wanted.
+                Button("New Project") {
+                    // This will be handled by the ProjectView
+                }
+                .keyboardShortcut("n", modifiers: [.command])
+                
+                Button("Open Project") {
+                    // This will be handled by the ProjectView
+                }
+                .keyboardShortcut("o", modifiers: [.command])
             }
-            CommandGroup(replacing: .undoRedo) {} //Remove undo/redo
-            CommandGroup(replacing: .pasteboard) {} // Remove cut/copy/paste/delete
-            CommandMenu("Chat") { // Add a "Chat" menu
-                Button("Clear History") {
+            CommandMenu("Session") { // Add a Session menu
+                Button("Clear Chat History") {
                     networkManager.clearMessages()
-                    sessionId = UUID().uuidString
                 }
                 .keyboardShortcut("k", modifiers: [.command]) // Optional shortcut
+                
+                Divider()
+                
+                Button("Switch to Chat") {
+                    // Find a way to switch to the Chat tab
+                }
+                .keyboardShortcut("1", modifiers: [.command])
+                
+                Button("Switch to Projects") {
+                    // Find a way to switch to the Projects tab
+                }
+                .keyboardShortcut("2", modifiers: [.command])
+                
+                Button("Switch to Characters") {
+                    // Find a way to switch to the Characters tab
+                }
+                .keyboardShortcut("3", modifiers: [.command])
             }
         }
     }
