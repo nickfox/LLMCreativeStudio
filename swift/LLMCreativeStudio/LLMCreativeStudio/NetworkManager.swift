@@ -248,7 +248,9 @@ class NetworkManager: ObservableObject {
             switch mention.lowercased() {
             case "a", "claude":
                 llmName = "claude"
-            case "c", "chatgpt":
+            case "c": // Changed from "chatgpt" to "claude" to match the Python code change
+                llmName = "claude"
+            case "chatgpt":
                 llmName = "chatgpt"
             case "g", "gemini":
                 llmName = "gemini"

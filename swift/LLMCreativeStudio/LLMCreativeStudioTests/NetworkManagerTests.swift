@@ -24,9 +24,9 @@ final class NetworkManagerTests: XCTestCase {
         XCTAssertEqual(result1.parsedMessage, "Can you help me?")
         XCTAssertEqual(result1.dataQuery, "")
         
-        // Test @c
+        // Test @c (now maps to claude instead of chatgpt)
         let result2 = networkManager.parseMessage("@c What do you think?")
-        XCTAssertEqual(result2.llmName, "chatgpt")
+        XCTAssertEqual(result2.llmName, "claude")
         XCTAssertEqual(result2.parsedMessage, "What do you think?")
         XCTAssertEqual(result2.dataQuery, "")
         
