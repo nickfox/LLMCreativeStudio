@@ -1,0 +1,243 @@
+--- STDOUT ---
+============================= test session starts ==============================
+platform darwin -- Python 3.13.2, pytest-8.3.4, pluggy-1.5.0 -- /Users/nickfox137/Documents/llm-creative-studio/python/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/nickfox137/Documents/llm-creative-studio/python
+configfile: pytest.ini
+plugins: langsmith-0.3.8, asyncio-0.25.3, anyio-4.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 1 item
+
+tests/run_debate_test.py::test_debate_with_user_participation FAILED     [100%]
+
+=================================== FAILURES ===================================
+_____________________ test_debate_with_user_participation ______________________
+
+    async def test_debate_with_user_participation():
+        """Simulate a debate with user participation."""
+        logging.info("Starting debate test with user participation")
+    
+        # Create conversation manager
+        cm = ConversationManager("test_session")
+    
+        # Mock the LLM response method as an async function
+        async def mock_generate_llm_response(llm, message, include_history=False, use_thinking_mode=False):
+            # Log prompt details to help diagnose state transition issues
+            if "[DEBATE ROUND" in message:
+                round_indicator = message.split("\n")[0] if "\n" in message else message
+                logging.info(f"Mock LLM {llm} received debate prompt: {round_indicator}")
+    
+            return f"Simulated response from {llm} for debate round: {message[:30]}..."
+    
+        cm.generate_llm_response = mock_generate_llm_response
+    
+        # Print debate state for each step of the test
+        logging.info("\n---------------- DEBATE TEST FLOW ----------------")
+        logging.info(f"1. Initial state before starting: {DebateState.IDLE}")
+        debate_manager = DebateManager(cm)
+        logging.info(f"2. After creating manager: {debate_manager.state}")
+    
+        # Start debate
+        topic = "The impact of AI on creative industries"
+        logging.info(f"Starting debate on topic: {topic}")
+    
+        responses = await debate_manager.start_debate(topic)
+        logging.info(f"3. After start_debate(): {debate_manager.state}")
+    
+        for response in responses:
+            logging.info(f"RESPONSE: {response.get('sender', 'Unknown')}: {response.get('content', '')[:100]}...")
+    
+        # Advance to first round
+        logging.info("Advancing to Round 1: Opening Statements")
+        responses = await debate_manager.advance_debate()
+        logging.info(f"4. After first advance_debate(): {debate_manager.state}")
+    
+        for response in responses:
+            logging.info(f"RESPONSE: {response.get('sender', 'Unknown')}: {response.get('content', '')[:100]}...")
+    
+        if debate_manager.is_waiting_for_user():
+            logging.info("System is waiting for user input after Round 1")
+    
+            # Simulate user input for Round 1
+            user_input = "My opening statement is that AI can enhance creativity but should not replace human creative vision."
+            logging.info(f"Providing user input: {user_input}")
+    
+            responses = await debate_manager.process_user_input(user_input)
+            logging.info(f"5. After user input in Round 1: {debate_manager.state}")
+    
+            for response in responses:
+                logging.info(f"RESPONSE: {response.get('sender', 'Unknown')}: {response.get('content', '')[:100]}...")
+    
+        # Check if we're still in Round 1 - we need to advance_debate() to go to Round 2
+        logging.info(f"Current debate state: {debate_manager.state}")
+        assert debate_manager.state == DebateState.ROUND_1_OPENING, f"Expected ROUND_1_OPENING, got {debate_manager.state}"
+    
+        # Now advance to Round 2
+        logging.info("Advancing to Round 2")
+        responses = await debate_manager.advance_debate()
+        logging.info(f"7. After advancing to Round 2: {debate_manager.state}")
+    
+        for response in responses:
+            logging.info(f"RESPONSE: {response.get('sender', 'Unknown')}: {response.get('content', '')[:100]}...")
+    
+        # Now we should be in Round 2
+        logging.info(f"Current debate state: {debate_manager.state}")
+        assert debate_manager.state == DebateState.ROUND_2_QUESTIONING, f"Expected ROUND_2_QUESTIONING, got {debate_manager.state}"
+    
+        # Advance to user input for Round 2
+        logging.info("Advancing to user input for Round 2")
+        responses = await debate_manager.advance_debate()
+        logging.info(f"9. After second advance_debate() in Round 2: {debate_manager.state}")
+    
+        for response in responses:
+            logging.info(f"RESPONSE: {response.get('sender', 'Unknown')}: {response.get('content', '')[:100]}...")
+    
+        # Use /continue to skip user input for Round 2
+        if debate_manager.is_waiting_for_user():
+            logging.info("Using /continue to skip user input for Round 2")
+            responses = await debate_manager.process_user_input("/continue")
+            logging.info(f"10. After /continue in Round 2: {debate_manager.state}")
+    
+            for response in responses:
+                logging.info(f"RESPONSE: {response.get('sender', 'Unknown')}: {response.get('content', '')[:100]}...")
+    
+        # Check we're still in Round 2
+        logging.info(f"Current debate state after user input: {debate_manager.state}")
+        assert debate_manager.state == DebateState.ROUND_2_QUESTIONING, f"Expected ROUND_2_QUESTIONING, got {debate_manager.state}"
+    
+        # Advance from Round 2 to Round 3
+        logging.info("Advancing from Round 2 to Round 3")
+        responses = await debate_manager.advance_debate()
+        logging.info(f"12. After advancing to Round 3: {debate_manager.state}")
+    
+        for response in responses:
+            logging.info(f"RESPONSE: {response.get('sender', 'Unknown')}: {response.get('content', '')[:100]}...")
+    
+        # Now we should be in Round 3
+        logging.info(f"Current debate state: {debate_manager.state}")
+        assert debate_manager.state == DebateState.ROUND_3_RESPONSES, f"Expected ROUND_3_RESPONSES, got {debate_manager.state}"
+    
+        # Simulate user input for Round 3 (if needed)
+        if debate_manager.is_waiting_for_user():
+            logging.info("Using /continue to skip user input for Round 3")
+            responses = await debate_manager.process_user_input("/continue")
+            logging.info(f"14. After /continue in Round 3: {debate_manager.state}")
+    
+            for response in responses:
+                logging.info(f"RESPONSE: {response.get('sender', 'Unknown')}: {response.get('content', '')[:100]}...")
+    
+        # Check we're still in Round 3
+        logging.info(f"Current debate state after user input: {debate_manager.state}")
+        assert debate_manager.state == DebateState.ROUND_3_RESPONSES, f"Expected ROUND_3_RESPONSES, got {debate_manager.state}"
+    
+        # Advance from Round 3 to Round 4 (Consensus)
+        logging.info("Advancing from Round 3 to Round 4")
+        responses = await debate_manager.advance_debate()
+        logging.info(f"16. After advancing to Round 4: {debate_manager.state}")
+    
+        for response in responses:
+            logging.info(f"RESPONSE: {response.get('sender', 'Unknown')}: {response.get('content', '')[:100]}...")
+    
+        # We're only testing that all transitions work, whether it ends up in ROUND_4 or not
+        logging.info(f"Current debate state: {debate_manager.state}")
+    
+        # We don't assert the specific state here, as the debate might auto-progress from ROUND_3 to
+        # FINAL_SYNTHESIS in some cases depending on how many speakers are active
+        logging.info(f"State after all transitions: {debate_manager.state}")
+        assert debate_manager.state in [DebateState.ROUND_3_RESPONSES, DebateState.ROUND_4_CONSENSUS,
+                                      DebateState.FINAL_SYNTHESIS, DebateState.COMPLETE], \
+            f"Expected debate to be in an advanced state, got {debate_manager.state}"
+    
+        # Simulate user input for Round 4 (if needed)
+        if debate_manager.is_waiting_for_user():
+            logging.info("Using /continue to skip user input for Round 4")
+            responses = await debate_manager.process_user_input("/continue")
+            logging.info(f"18. After /continue in Round 4: {debate_manager.state}")
+    
+            for response in responses:
+                logging.info(f"RESPONSE: {response.get('sender', 'Unknown')}: {response.get('content', '')[:100]}...")
+    
+        # Advance from Round 4 to FINAL_SYNTHESIS
+        logging.info("Advancing to final synthesis")
+        responses = await debate_manager.advance_debate()
+        logging.info(f"19. After advancing to FINAL_SYNTHESIS: {debate_manager.state}")
+    
+        for response in responses:
+            logging.info(f"RESPONSE: {response.get('sender', 'Unknown')}: {response.get('content', '')[:100]}...")
+    
+        # The state should end up either in FINAL_SYNTHESIS or COMPLETE
+        logging.info(f"Final debate state: {debate_manager.state}")
+>       assert debate_manager.state in [DebateState.FINAL_SYNTHESIS, DebateState.COMPLETE], \
+               f"Expected FINAL_SYNTHESIS or COMPLETE, got {debate_manager.state}"
+E       AssertionError: Expected FINAL_SYNTHESIS or COMPLETE, got DebateState.ROUND_4_CONSENSUS
+E       assert <DebateState.ROUND_4_CONSENSUS: 4> in [<DebateState.FINAL_SYNTHESIS: 5>, <DebateState.COMPLETE: 6>]
+E        +  where <DebateState.ROUND_4_CONSENSUS: 4> = <debate_manager.DebateManager object at 0x10362aa50>.state
+
+tests/run_debate_test.py:175: AssertionError
+------------------------------ Captured log call -------------------------------
+INFO     root:run_debate_test.py:23 Starting debate test with user participation
+INFO     root:conversation_manager.py:75 ConversationManager initialized for session test_session
+INFO     root:run_debate_test.py:40 
+---------------- DEBATE TEST FLOW ----------------
+INFO     root:run_debate_test.py:41 1. Initial state before starting: DebateState.IDLE
+INFO     root:run_debate_test.py:43 2. After creating manager: DebateState.IDLE
+INFO     root:run_debate_test.py:47 Starting debate on topic: The impact of AI on creative industries
+INFO     root:run_debate_test.py:33 Mock LLM claude received debate prompt: DEBATE TOPIC: The impact of AI on creative industries
+INFO     root:run_debate_test.py:50 3. After start_debate(): DebateState.ROUND_1_OPENING
+INFO     root:run_debate_test.py:53 RESPONSE: system: Starting 4-round collaborative debate on: The impact of AI on creative industries
+
+Round 1: Opening ...
+INFO     root:run_debate_test.py:53 RESPONSE: claude: Simulated response from claude for debate round: DEBATE TOPIC: The impact of AI......
+INFO     root:run_debate_test.py:56 Advancing to Round 1: Opening Statements
+INFO     root:run_debate_test.py:33 Mock LLM chatgpt received debate prompt: DEBATE TOPIC: The impact of AI on creative industries
+INFO     root:run_debate_test.py:58 4. After first advance_debate(): DebateState.ROUND_1_OPENING
+INFO     root:run_debate_test.py:61 RESPONSE: chatgpt: Simulated response from chatgpt for debate round: DEBATE TOPIC: The impact of AI......
+INFO     root:run_debate_test.py:77 Current debate state: DebateState.ROUND_1_OPENING
+INFO     root:run_debate_test.py:81 Advancing to Round 2
+INFO     root:run_debate_test.py:33 Mock LLM gemini received debate prompt: DEBATE TOPIC: The impact of AI on creative industries
+INFO     root:run_debate_test.py:33 Mock LLM claude received debate prompt: DEBATE TOPIC: The impact of AI on creative industries
+INFO     root:run_debate_test.py:83 7. After advancing to Round 2: DebateState.ROUND_2_QUESTIONING
+INFO     root:run_debate_test.py:86 RESPONSE: gemini: Simulated response from gemini for debate round: DEBATE TOPIC: The impact of AI......
+INFO     root:run_debate_test.py:86 RESPONSE: system: Beginning Round 2: Round 2 Questioning...
+INFO     root:run_debate_test.py:86 RESPONSE: claude: Simulated response from claude for debate round: DEBATE TOPIC: The impact of AI......
+INFO     root:run_debate_test.py:89 Current debate state: DebateState.ROUND_2_QUESTIONING
+INFO     root:run_debate_test.py:93 Advancing to user input for Round 2
+INFO     root:run_debate_test.py:33 Mock LLM chatgpt received debate prompt: DEBATE TOPIC: The impact of AI on creative industries
+INFO     root:run_debate_test.py:95 9. After second advance_debate() in Round 2: DebateState.ROUND_2_QUESTIONING
+INFO     root:run_debate_test.py:98 RESPONSE: chatgpt: Simulated response from chatgpt for debate round: DEBATE TOPIC: The impact of AI......
+INFO     root:run_debate_test.py:110 Current debate state after user input: DebateState.ROUND_2_QUESTIONING
+INFO     root:run_debate_test.py:114 Advancing from Round 2 to Round 3
+INFO     root:run_debate_test.py:33 Mock LLM gemini received debate prompt: DEBATE TOPIC: The impact of AI on creative industries
+INFO     root:run_debate_test.py:33 Mock LLM claude received debate prompt: DEBATE TOPIC: The impact of AI on creative industries
+INFO     root:run_debate_test.py:116 12. After advancing to Round 3: DebateState.ROUND_3_RESPONSES
+INFO     root:run_debate_test.py:119 RESPONSE: gemini: Simulated response from gemini for debate round: DEBATE TOPIC: The impact of AI......
+INFO     root:run_debate_test.py:119 RESPONSE: system: Beginning Round 3: Round 3 Responses...
+INFO     root:run_debate_test.py:119 RESPONSE: claude: Simulated response from claude for debate round: DEBATE TOPIC: The impact of AI......
+INFO     root:run_debate_test.py:122 Current debate state: DebateState.ROUND_3_RESPONSES
+INFO     root:run_debate_test.py:135 Current debate state after user input: DebateState.ROUND_3_RESPONSES
+INFO     root:run_debate_test.py:139 Advancing from Round 3 to Round 4
+INFO     root:run_debate_test.py:33 Mock LLM chatgpt received debate prompt: DEBATE TOPIC: The impact of AI on creative industries
+INFO     root:run_debate_test.py:141 16. After advancing to Round 4: DebateState.ROUND_3_RESPONSES
+INFO     root:run_debate_test.py:144 RESPONSE: chatgpt: Simulated response from chatgpt for debate round: DEBATE TOPIC: The impact of AI......
+INFO     root:run_debate_test.py:147 Current debate state: DebateState.ROUND_3_RESPONSES
+INFO     root:run_debate_test.py:151 State after all transitions: DebateState.ROUND_3_RESPONSES
+INFO     root:run_debate_test.py:166 Advancing to final synthesis
+INFO     root:run_debate_test.py:33 Mock LLM gemini received debate prompt: DEBATE TOPIC: The impact of AI on creative industries
+INFO     root:run_debate_test.py:33 Mock LLM claude received debate prompt: DEBATE TOPIC: The impact of AI on creative industries
+WARNING  root:debate_manager.py:544 Consensus scores from claude sum to 0, not 100
+INFO     root:debate_manager.py:553 Extracted consensus scores from claude: {}
+INFO     root:run_debate_test.py:168 19. After advancing to FINAL_SYNTHESIS: DebateState.ROUND_4_CONSENSUS
+INFO     root:run_debate_test.py:171 RESPONSE: gemini: Simulated response from gemini for debate round: DEBATE TOPIC: The impact of AI......
+INFO     root:run_debate_test.py:171 RESPONSE: system: Beginning Round 4: Round 4 Consensus...
+INFO     root:run_debate_test.py:171 RESPONSE: claude: Simulated response from claude for debate round: DEBATE TOPIC: The impact of AI......
+INFO     root:run_debate_test.py:174 Final debate state: DebateState.ROUND_4_CONSENSUS
+=========================== short test summary info ============================
+FAILED tests/run_debate_test.py::test_debate_with_user_participation - Assert...
+============================== 1 failed in 0.03s ===============================
+
+
+--- STDERR ---
+/Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/pytest_asyncio/plugin.py:207: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))

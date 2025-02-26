@@ -36,19 +36,43 @@ async def test_conversation():
     print("\n=== Testing debate mode ===")
     responses = await manager.process_message("/debate 2 The future of AI", "user")
     for response in responses:
-        print(f"{response['llm'].capitalize()}: {response['response']}")
+        # Handle different response formats (debate responses might have 'sender' instead of 'llm')
+        if 'llm' in response:
+            print(f"{response['llm'].capitalize()}: {response['response']}")
+        elif 'sender' in response:
+            sender = response['sender']
+            content = response.get('content', response.get('response', 'No content'))
+            print(f"{sender.capitalize()}: {content}")
+        else:
+            print(f"Unknown format: {response}")
     
     # Test message in debate mode
     print("\n=== Testing message in debate mode ===")
     responses = await manager.process_message("What are the main considerations for AI governance?", "user")
     for response in responses:
-        print(f"{response['llm'].capitalize()}: {response['response'][:100]}...")
+        # Handle different response formats
+        if 'llm' in response:
+            print(f"{response['llm'].capitalize()}: {response['response'][:100]}...")
+        elif 'sender' in response:
+            sender = response['sender']
+            content = response.get('content', response.get('response', 'No content'))[:100]
+            print(f"{sender.capitalize()}: {content}...")
+        else:
+            print(f"Unknown format: {response}")
     
     # Test help command
     print("\n=== Testing help command ===")
     responses = await manager.process_message("/help", "user")
     for response in responses:
-        print(f"{response['llm'].capitalize()}: {response['response'][:200]}...")
+        # Handle different response formats
+        if 'llm' in response:
+            print(f"{response['llm'].capitalize()}: {response['response'][:200]}...")
+        elif 'sender' in response:
+            sender = response['sender']
+            content = response.get('content', response.get('response', 'No content'))[:200]
+            print(f"{sender.capitalize()}: {content}...")
+        else:
+            print(f"Unknown format: {response}")
 
 if __name__ == "__main__":
     asyncio.run(test_conversation())

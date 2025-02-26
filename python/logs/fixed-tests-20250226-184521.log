@@ -1,0 +1,137 @@
+Running: python -m pytest test_conversation.py tests/test_debate_user_participation.py::test_debate_user_participation_flow tests/test_llms.py::test_claude_autogen_response tests/test_llms.py::test_chatgpt_autogen_response tests/test_llms.py::test_gemini_autogen_response -v
+
+=== STDOUT ===
+============================= test session starts ==============================
+platform darwin -- Python 3.13.2, pytest-8.3.4, pluggy-1.5.0 -- /Users/nickfox137/Documents/llm-creative-studio/python/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/nickfox137/Documents/llm-creative-studio/python
+configfile: pytest.ini
+plugins: langsmith-0.3.8, asyncio-0.25.3, anyio-4.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 5 items
+
+test_conversation.py::test_conversation PASSED                           [ 20%]
+tests/test_debate_user_participation.py::test_debate_user_participation_flow FAILED [ 40%]
+tests/test_llms.py::test_claude_autogen_response PASSED                  [ 60%]
+tests/test_llms.py::test_chatgpt_autogen_response PASSED                 [ 80%]
+tests/test_llms.py::test_gemini_autogen_response PASSED                  [100%]
+
+=================================== FAILURES ===================================
+_____________________ test_debate_user_participation_flow ______________________
+
+debate_manager = <debate_manager.DebateManager object at 0x10bb6bc50>
+
+    @pytest.mark.asyncio
+    async def test_debate_user_participation_flow(debate_manager):
+        """Test the flow of a debate with user participation."""
+        # Initialize user_inputs property
+        debate_manager.user_inputs = {}
+    
+        # Start the debate
+        responses = await debate_manager.start_debate("Test topic")
+    
+        # Verify the debate is started in Round 1
+        assert debate_manager.state == DebateState.ROUND_1_OPENING
+        assert len(responses) > 0
+    
+        # Mock the advance_debate method to ensure it includes all speakers
+        # This fixed version simulates waiting for user input after all LLMs have spoken
+        async def mock_advance_debate():
+            # Since DebateState doesn't actually have ROUND_1_USER_INPUT in the current code,
+            # we'll just use the regular state and set a waiting flag
+            debate_manager.state = DebateState.ROUND_1_OPENING
+            debate_manager.waiting_for_user = True
+            return [
+                {
+                    "sender": "system",
+                    "content": "Your turn to provide input",
+                    "debate_round": 1,
+                    "debate_state": "ROUND_1_OPENING",
+                    "waiting_for_user": True
+                }
+            ]
+    
+        # Apply our fixed mock to the debate_manager
+        debate_manager.advance_debate = mock_advance_debate
+    
+        # Call the (mocked) advance_debate method
+        responses = await debate_manager.advance_debate()
+    
+        # User's input should be requested now
+        waiting_msg = next((r for r in responses if r.get("waiting_for_user", False)), None)
+        assert waiting_msg is not None
+        assert debate_manager.is_waiting_for_user() == True
+    
+        # Add a mock process_user_input method that works with Round 1 base state
+        async def mock_process_user_input(message):
+            # In actual implementation, this would update the state to ROUND_2_QUESTIONING
+            # and add the user input to user_inputs
+            debate_manager.state = DebateState.ROUND_2_QUESTIONING
+            debate_manager.user_inputs[1] = message
+            debate_manager.waiting_for_user = False  # Reset the waiting flag
+    
+            return [{
+                "sender": "system",
+                "content": "Moving to next round",
+                "debate_round": 2,
+                "debate_state": "ROUND_2_QUESTIONING"
+            }]
+    
+        # Apply our mock to the debate_manager
+        debate_manager.process_user_input = mock_process_user_input
+    
+        # User provides their input for Round 1
+        user_input = "My opening statement on this topic."
+        user_responses = await debate_manager.process_user_input(user_input)
+    
+        # Verify the debate advances to Round 2
+        assert debate_manager.state == DebateState.ROUND_2_QUESTIONING
+        assert not debate_manager.is_waiting_for_user()
+        assert 1 in debate_manager.user_inputs
+    
+        # Skip ahead to Round 3 by processing LLM responses and using /continue
+        responses = await debate_manager.advance_debate()
+    
+        # User should be prompted again
+        waiting_msg = next((r for r in responses if r.get("waiting_for_user", False)), None)
+        assert waiting_msg is not None
+        assert debate_manager.is_waiting_for_user() == True
+    
+        # User skips their input with /continue
+        continue_responses = await debate_manager.process_user_input("/continue")
+    
+        # Verify we advance to Round 3
+>       assert debate_manager.state == DebateState.ROUND_3_RESPONSES
+E       assert <DebateState.ROUND_2_QUESTIONING: 2> == <DebateState.ROUND_3_RESPONSES: 3>
+E        +  where <DebateState.ROUND_2_QUESTIONING: 2> = <debate_manager.DebateManager object at 0x10bb6bc50>.state
+E        +  and   <DebateState.ROUND_3_RESPONSES: 3> = DebateState.ROUND_3_RESPONSES
+
+tests/test_debate_user_participation.py:113: AssertionError
+------------------------------ Captured log setup ------------------------------
+INFO     root:conversation_manager.py:75 ConversationManager initialized for session test_session
+=============================== warnings summary ===============================
+venv/lib/python3.13/site-packages/pydantic/_internal/_config.py:295
+  /Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/pydantic/_internal/_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+venv/lib/python3.13/site-packages/pydantic/v1/typing.py:68
+venv/lib/python3.13/site-packages/pydantic/v1/typing.py:68
+venv/lib/python3.13/site-packages/pydantic/v1/typing.py:68
+venv/lib/python3.13/site-packages/pydantic/v1/typing.py:68
+venv/lib/python3.13/site-packages/pydantic/v1/typing.py:68
+venv/lib/python3.13/site-packages/pydantic/v1/typing.py:68
+venv/lib/python3.13/site-packages/pydantic/v1/typing.py:68
+  /Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/pydantic/v1/typing.py:68: DeprecationWarning: Failing to pass a value to the 'type_params' parameter of 'typing.ForwardRef._evaluate' is deprecated, as it leads to incorrect behaviour when calling typing.ForwardRef._evaluate on a stringified annotation that references a PEP 695 type parameter. It will be disallowed in Python 3.15.
+    return cast(Any, type_)._evaluate(globalns, localns, recursive_guard=set())
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_debate_user_participation.py::test_debate_user_participation_flow
+=================== 1 failed, 4 passed, 8 warnings in 28.07s ===================
+
+
+=== STDERR ===
+/Users/nickfox137/Documents/llm-creative-studio/python/venv/lib/python3.13/site-packages/pytest_asyncio/plugin.py:207: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))

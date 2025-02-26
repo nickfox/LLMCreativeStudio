@@ -13,3 +13,4 @@ langchain-google-genai
 langchain-anthropic
 langchain-core
 pyautogen>=0.2.0
+pytest-asyncio>=0.21.0

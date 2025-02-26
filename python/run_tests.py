@@ -1,8 +1,14 @@
+#!/usr/bin/env python3
 # /Users/nickfox137/Documents/llm-creative-studio/python/run_tests.py
 
 """
 Test runner for LLMCreativeStudio
 This script runs all tests and captures errors to a log file
+
+Usage:
+    python run_tests.py                 # Run all tests
+    python run_tests.py --verbose       # Run with detailed output
+    python run_tests.py --test-file X   # Run specific test file
 """
 
 import os
@@ -28,8 +34,8 @@ def main():
     else:
         test_path = 'tests/'
     
-    # Build the pytest command
-    pytest_cmd = [sys.executable, '-m', 'pytest', test_path, '--no-header']
+    # Add pytest-asyncio to required plugins
+    pytest_cmd = [sys.executable, '-m', 'pytest', test_path, '--no-header', '-xvs']
     
     if args.verbose:
         pytest_cmd.append('-v')

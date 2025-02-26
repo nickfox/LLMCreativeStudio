@@ -130,14 +130,45 @@ class NetworkManager: ObservableObject {
                                 } else if let responseArray = jsonResponse as? [[String: Any]] {
                                     print("Processing array of \(responseArray.count) responses")
                                     for responseDict in responseArray {
+                                        // Handle both old and new response formats
                                         if let responseText = responseDict["response"] as? String,
                                            let llmName = responseDict["llm"] as? String {
+                                            // Old format
                                             print("Processing array response from \(llmName)")
                                             let llmMessage = Message(
                                                 text: responseText,
                                                 sender: llmName,
                                                 senderName: self.getSenderName(for: llmName),
                                                 timestamp: Date()
+                                            )
+                                            self.messages.append(llmMessage)
+                                        } else if let contentText = responseDict["content"] as? String,
+                                                  let sender = responseDict["sender"] as? String {
+                                            // New debate format
+                                            print("Processing debate response from \(sender)")
+                                            
+                                            // Get debate metadata
+                                            let debateRound = responseDict["debate_round"] as? Int
+                                            let debateState = responseDict["debate_state"] as? String
+                                            let waitingForUser = responseDict["waiting_for_user"] as? Bool
+                                            let actionRequired = responseDict["action_required"] as? String
+                                            
+                                            // Add special formatting for prompts waiting for user input
+                                            let displayText = contentText
+                                            
+                                            // Create the message with all debate properties
+                                            let llmMessage = Message(
+                                                text: displayText,
+                                                sender: sender,
+                                                senderName: self.getSenderName(for: sender),
+                                                timestamp: Date(),
+                                                referencedMessageId: nil,
+                                                conversationMode: "debate",
+                                                messageIntent: nil,
+                                                debateRound: debateRound,
+                                                debateState: debateState,
+                                                waitingForUser: waitingForUser,
+                                                actionRequired: actionRequired
                                             )
                                             self.messages.append(llmMessage)
                                         }
