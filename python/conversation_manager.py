@@ -12,6 +12,9 @@ import json
 import traceback
 from typing import List, Dict, Any, Optional, Tuple, Union, Set
 
+# Import locally when needed to avoid circular imports
+# from debate_manager import DebateManager, DebateState
+
 class ConversationManager:
     """
     ConversationManager orchestrates conversations between multiple LLMs.
@@ -91,6 +94,10 @@ class ConversationManager:
             if sender == "user" and message.startswith("/"):
                 return await self._handle_command(message)
             
+            # Check if this is user input for an active debate
+            if sender == "user" and hasattr(self, 'debate_manager') and self.debate_manager.is_waiting_for_user():
+                return await self.debate_manager.process_user_input(message)
+            
             # Parse @mentions or character names if no explicit target is provided
             if target_llm is None:
                 target_llm, message = self._parse_addressing(message)
@@ -127,19 +134,23 @@ class ConversationManager:
             logging.exception(error_msg)
             return [{"llm": "system", "response": f"Error: {error_msg}"}]
     
-    async def _get_llm_response(self, llm_name: str, message: str, sender: str) -> str:
+    async def generate_llm_response(self, llm_name: str, message: str, include_history: bool = False, use_thinking_mode: bool = False) -> str:
         """
-        Get a response from a specific LLM using AutoGen.
+        Generate a response from a specific LLM.
+        
+        Enhanced version of _get_llm_response that can optionally use thinking mode
+        and include or exclude conversation history. Used by debate manager.
         
         Args:
             llm_name (str): Name of the LLM to get response from
             message (str): Message to send to the LLM
-            sender (str): Who sent the original message
+            include_history (bool): Whether to include conversation history
+            use_thinking_mode (bool): Whether to use Claude's thinking mode (if available)
             
         Returns:
             str: The LLM's response
         """
-        logging.info(f"Getting response from {llm_name} for message: {message[:50]}...")
+        logging.info(f"Generating response from {llm_name}, thinking_mode={use_thinking_mode}")
         
         try:
             # Get the LLM instance based on the name
@@ -162,18 +173,53 @@ class ConversationManager:
             # Get the current role for this LLM
             role = self.active_roles.get(llm_name, "assistant")
             
-            # Construct context from conversation history
-            context = self._build_context_for_llm(llm_name)
+            # Construct context from conversation history if requested
+            context = ""
+            if include_history:
+                context = self._build_context_for_llm(llm_name)
+                message = f"{context}\n\n{message}"
             
             # Prepare character context if applicable
             if character_name:
                 character_context = f"You are roleplaying as {character_name}. Respond in character."
                 message = f"{character_context}\n\n{message}"
             
-            # Get response using AutoGen
-            response = await llm.autogen_response(message, role)
+            # Get response, with thinking mode if requested and available
+            response = ""
+            if use_thinking_mode and llm_name == "claude":
+                # Only Claude supports thinking mode currently
+                response = await llm.autogen_response(message, role, use_thinking=True)
+            else:
+                response = await llm.autogen_response(message, role)
+            
+            return response
+            
+        except Exception as e:
+            error_msg = f"Error generating response from {llm_name}: {str(e)}"
+            logging.exception(error_msg)
+            logging.error(traceback.format_exc())
+            return f"Error: Failed to get response from {llm_name}. {str(e)}"
+    
+    async def _get_llm_response(self, llm_name: str, message: str, sender: str) -> str:
+        """
+        Get a response from a specific LLM using AutoGen.
+        
+        Args:
+            llm_name (str): Name of the LLM to get response from
+            message (str): Message to send to the LLM
+            sender (str): Who sent the original message
+            
+        Returns:
+            str: The LLM's response
+        """
+        logging.info(f"Getting response from {llm_name} for message: {message[:50]}...")
+        
+        try:
+            # Use the generate_llm_response method to get the response
+            response = await self.generate_llm_response(llm_name, message)
             
             # Add to conversation history
+            character_name = self.llm_to_character.get(llm_name)
             self.conversation_history.append({
                 "sender": character_name if character_name else llm_name,
                 "content": response,
@@ -289,9 +335,16 @@ class ConversationManager:
             cmd = parts[0].lower()
             
             if cmd == "/debate":
-                # Start a debate session
-                rounds = int(parts[1]) if len(parts) > 1 else 3
-                return await self._start_debate_mode(rounds, " ".join(parts[2:]))
+                # Start a collaborative debate with the fixed format
+                # Usage: /debate [topic]
+                topic = " ".join(parts[1:]) if len(parts) > 1 else "General discussion"
+                
+                # Initialize the debate manager if not exists
+                if not hasattr(self, 'debate_manager'):
+                    from debate_manager import DebateManager
+                    self.debate_manager = DebateManager(self)
+                
+                return await self.debate_manager.start_debate(topic)
             
             elif cmd == "/role":
                 # Assign roles to LLMs
@@ -324,6 +377,23 @@ class ConversationManager:
                 self.characters = {}
                 self.llm_to_character = {}
                 return [{"llm": "system", "response": "All character assignments cleared."}]
+            
+            elif cmd == "/continue" or cmd == "/continue_debate":
+                # Continue a paused debate
+                if hasattr(self, 'debate_manager'):
+                    from debate_manager import DebateState
+                    
+                    # Check if we're waiting for user input in a debate
+                    if self.debate_manager.is_waiting_for_user():
+                        return await self.debate_manager.process_user_input("/continue")
+                    
+                    # Otherwise, check if debate is active and advance it
+                    elif self.debate_manager.state != DebateState.IDLE:
+                        return await self.debate_manager.advance_debate()
+                    else:
+                        return [{"llm": "system", "response": "Debate is already complete. Start a new debate with /debate."}]
+                else:
+                    return [{"llm": "system", "response": "No active debate found. Start a new debate with /debate."}]
                 
             elif cmd == "/help":
                 # Show available commands and mention syntax
@@ -498,8 +568,17 @@ class ConversationManager:
 - When using characters, simply address them by name: "John, what do you think about..."
 
 ### Special Commands
-- `/debate [rounds] [topic]` - Start a structured debate with specified number of rounds on a topic
-  Example: `/debate 3 Benefits of artificial intelligence`
+- `/debate [topic]` - Start a collaborative structured debate on a topic
+  Example: `/debate Benefits of artificial intelligence`
+  Round 1: Opening statements from all participants (including you)
+  Round 2: Defense and cross-examination with questions
+  Round 3: Responses to questions and final positions
+  Round 4: Weighted consensus voting (percentage allocations)
+  Final: Synthesized summary based on consensus scores
+
+  You will be prompted for input after each round.
+
+- `/continue` - Continue the debate without adding your input for the current round
 
 - `/role [llm] [role]` - Assign a specific role to an LLM
   Example: `/role claude researcher` or `/role chatgpt debater`
@@ -519,7 +598,8 @@ class ConversationManager:
 ### Examples
 - "@a Can you research quantum computing papers?"
 - "John, what do you think about this melody?"
-- "/debate 2 Climate change solutions"
+- "/debate Is AI consciousness possible?"
+- "/character claude John Lennon" followed by "/character chatgpt Paul McCartney"
 """
         
         # Add character info if any characters are assigned

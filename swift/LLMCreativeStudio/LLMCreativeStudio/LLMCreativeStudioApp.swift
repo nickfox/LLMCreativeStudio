@@ -55,7 +55,7 @@ struct LLMCreativeStudioApp: App {
 
 // --- Color Definitions ---
 extension Color {
-    static let background = Color(hex: "1A1A1D")     // Rich dark charcoal
+    static let background = Color(hex: "222225")     // Rich dark charcoal (slightly adjusted)
     static let messageBubble = Color(hex: "2C2C30")  // Slightly lighter charcoal
     static let messageText = Color(hex: "F5F5F5")    // Soft white
     static let senderName = Color(hex: "E065BA")     // Muted magenta

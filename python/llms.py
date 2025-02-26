@@ -435,13 +435,14 @@ class Claude(LLM):
             logging.exception(f"Unexpected Claude Error: {e}")
             raise HTTPException(status_code=500, detail=f"Unexpected Claude Error: {e}")
     
-    async def autogen_response(self, prompt: str, role: str = "assistant") -> str:
+    async def autogen_response(self, prompt: str, role: str = "assistant", use_thinking: bool = False) -> str:
         """
-        Get a response using AutoGen.
+        Get a response using AutoGen, optionally with thinking mode.
         
         Args:
             prompt (str): The prompt to send
             role (str): Role to adopt
+            use_thinking (bool): Whether to use Claude's thinking mode
             
         Returns:
             str: Claude's response
@@ -453,14 +454,32 @@ class Claude(LLM):
             role_prompt = self.get_role_prompt(role)
             system_prompt = f"You are Claude. {role_prompt}"
             
-            response = client.messages.create(
-                model=self.model,
-                max_tokens=1000,
-                system=system_prompt,
-                messages=[
+            # If using thinking mode, modify system prompt
+            if use_thinking:
+                system_prompt = f"{system_prompt}\n\nTake your time to think deeply about this question. Work through your reasoning step by step, considering multiple perspectives before reaching a conclusion."
+                logging.info("Using Claude thinking mode")
+            
+            # Prepare API parameters
+            params = {
+                "model": self.model,
+                "max_tokens": 1500,  # Increased for thinking mode
+                "system": system_prompt,
+                "messages": [
                     {"role": "user", "content": prompt}
                 ]
-            )
+            }
+            
+            # Add thinking parameters for Claude 3 if available and requested
+            if use_thinking and "claude-3" in self.model:
+                params["temperature"] = 0.5  # Lower temperature for more focused thinking
+                
+                # If we're using Claude 3.7, use the reasoning mode
+                if "claude-3-7" in self.model or "claude-3.7" in self.model:
+                    params["extended_thinking"] = True
+                    logging.info("Using Claude 3.7 extended_thinking parameter")
+            
+            # Make the API call
+            response = client.messages.create(**params)
             
             return response.content[0].text
             

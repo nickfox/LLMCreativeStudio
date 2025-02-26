@@ -33,8 +33,8 @@ setup_logging()
 # --- FastAPI App ---
 app = FastAPI(
     title="LLMCreativeStudio API",
-    description="API for LLMCreativeStudio, a multi-LLM conversation platform",
-    version="0.8.0"
+    description="API for LLMCreativeStudio, a multi-LLM conversation platform with enhanced debate capabilities",
+    version="0.9.0"
 )
 
 # --- Database Setup ---
@@ -106,7 +106,7 @@ def get_message_history(session_id: str):
     Returns:
         SQLChatMessageHistory: Message history for the session
     """
-    return SQLChatMessageHistory(session_id=session_id, connection_string=DATABASE_URL)
+    return SQLChatMessageHistory(session_id=session_id, connection=DATABASE_URL)
 
 def get_conversation_manager(session_id: str) -> ConversationManager:
     """
@@ -187,7 +187,13 @@ async def chat(chat_request: Request):
             
             # Record command responses in history for backward compatibility
             for response in responses:
-                history.add_ai_message(f"System: {response['response']}")
+                # Check the format of the response to handle both types
+                if "content" in response:
+                    # New format from debate manager
+                    history.add_ai_message(f"{response.get('sender', 'System')}: {response['content']}")
+                elif "response" in response:
+                    # Old format
+                    history.add_ai_message(f"System: {response['response']}")                
             
             # If project ID is provided, save the conversation state
             if project_id:
@@ -223,9 +229,31 @@ async def chat(chat_request: Request):
         # Process the message through the conversation manager
         responses = await conversation_manager.process_message(enhanced_message, "user", llm_name if llm_name != "all" else None)
         
+        # Add debate pause information to responses if applicable
+        if hasattr(conversation_manager, 'debate_manager') and conversation_manager.debate_manager.is_waiting_for_user():
+            # Find the latest response with waiting_for_user=True and add UI indicator
+            for response in responses:
+                if response.get("waiting_for_user", False):
+                    response["waiting_for_user"] = True
+                    response["action_required"] = "debate_input"
+                    logging.info("Debate is waiting for user input")
+        
         # Record responses in history for backward compatibility
         for response in responses:
-            history.add_ai_message(f"{response['llm'].capitalize()}: {response['response']}")
+            # Handle both response formats
+            if "content" in response:
+                # New format from debate manager
+                sender = response.get("sender", response.get("llm", "System"))
+                history.add_ai_message(f"{sender.capitalize()}: {response['content']}")
+            elif "response" in response:
+                # Old format
+                llm = response.get("llm", "System")
+                history.add_ai_message(f"{llm.capitalize()}: {response['response']}")
+        
+        # Add debug information if requested in debug mode
+        if conversation_manager.debug and hasattr(conversation_manager, 'debate_manager'):
+            logging.info(f"Current debate state: {conversation_manager.debate_manager.state if hasattr(conversation_manager, 'debate_manager') else 'No debate'}")
+            logging.info(f"Waiting for user: {conversation_manager.debate_manager.is_waiting_for_user() if hasattr(conversation_manager, 'debate_manager') else False}")
         
         # If project ID is provided, save the conversation state
         if project_id:
@@ -803,10 +831,11 @@ async def read_root():
     """
     return {
         "message": "Welcome to the LLMCreativeStudio API!",
-        "version": "0.8.0",
+        "version": "0.9.0",
         "features": [
             "Multi-LLM conversations with Claude, ChatGPT, and Gemini",
             "AutoGen-powered conversation management",
+            "Enhanced debate system with active user participation",
             "Multiple conversation modes (open, debate, creative, research)",
             "Project management for persistent work",
             "Character-based roleplay for creative tasks",
