@@ -179,8 +179,9 @@ class DebateManager:
                 }
                 
                 # If the LLM has a character assigned, update the sender
-                if next_speaker in self.cm.llm_to_character:
-                    response["character"] = self.cm.llm_to_character[next_speaker]
+                character = self.cm.character_manager.get_character_for_llm(next_speaker)
+                if character:
+                    response["character"] = character.character_name
                 
                 # Add to debate and conversation history
                 self.debate_history.append(response)
@@ -255,11 +256,15 @@ class DebateManager:
             str: Formatted prompt text
         """
         # Get character name if available
-        character_name = self.cm.llm_to_character.get(speaker, speaker.capitalize())
+        character = self.cm.character_manager.get_character_for_llm(speaker)
+        character_name = character.character_name if character else speaker.capitalize()
         
         # Get other participants
         other_speakers = [s for s in self.speaker_order if s != speaker]
-        other_names = [self.cm.llm_to_character.get(s, s.capitalize()) for s in other_speakers]
+        other_names = []
+        for s in other_speakers:
+            other_char = self.cm.character_manager.get_character_for_llm(s)
+            other_names.append(other_char.character_name if other_char else s.capitalize())
         
         # Start with the debate topic
         prompt = f"DEBATE TOPIC: {self.topic}\n\n"
@@ -341,7 +346,8 @@ PERCENTAGE ALLOCATIONS:
 """
             # List all speakers for allocation
             for s in self.speaker_order:
-                name = self.cm.llm_to_character.get(s, s.capitalize())
+                char = self.cm.character_manager.get_character_for_llm(s)
+                name = char.character_name if char else s.capitalize()
                 prompt += f"{name}'s position: __% \n"
             
             prompt += """
@@ -455,7 +461,8 @@ Your synthesis should not simply average positions but create a higher-order int
         other_speakers = [s for s in self.speaker_order if s != speaker]
         
         for other in other_speakers:
-            other_name = self.cm.llm_to_character.get(other, other.capitalize())
+            other_char = self.cm.character_manager.get_character_for_llm(other)
+            other_name = other_char.character_name if other_char else other.capitalize()
             
             # Look for sections addressed to this participant
             # Basic approach: Find "TO [name]:" and capture the text after it
@@ -503,7 +510,8 @@ Your synthesis should not simply average positions but create a higher-order int
         # Look for lines with percentage allocations
         # Format: "[Name]'s position: XX%"
         for other in self.speaker_order:
-            other_name = self.cm.llm_to_character.get(other, other.capitalize())
+            other_char = self.cm.character_manager.get_character_for_llm(other)
+            other_name = other_char.character_name if other_char else other.capitalize()
             
             # Regular percentage format
             markers = [
