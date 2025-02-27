@@ -216,6 +216,71 @@ class DataAccess:
             self.logger.info("All documents deleted from database.")
         except sqlite3.Error as e:
             self.logger.error(f"Error clearing database: {e}")
+    
+    async def get_document_content(self, document_id: str) -> str:
+        """
+        Get the content of a document by its ID.
+        
+        Args:
+            document_id (str): The document ID to retrieve content for
+            
+        Returns:
+            str: The document content as text
+        """
+        try:
+            # First, try to interpret document_id as a project file ID
+            from project_manager import ProjectManager
+            
+            # This was causing an issue: we can't get all project files this way
+            # Instead, we'll try a different approach
+            conn = self._get_connection()
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM project_files WHERE id = ?", (document_id,))
+            file_info = cursor.fetchone()
+            conn.close()
+            
+            if file_info:
+                # Get file path and project ID
+                file_path = file_info["file_path"]
+                project_id = file_info["project_id"]
+                
+                # Construct full path
+                from project_manager import PROJECTS_DIR
+                full_path = os.path.join(PROJECTS_DIR, project_id, file_path)
+                
+                # Read file content based on type
+                if os.path.exists(full_path):
+                    from data import read_file_content
+                    return read_file_content(full_path)
+            
+            # If not found or not a project file, try to get from database
+            conn = self._get_connection()
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Try to interpret document_id as a numeric ID or a file path
+            try:
+                doc_id = int(document_id)
+                cursor.execute("SELECT file_path FROM documents WHERE id = ?", (doc_id,))
+            except ValueError:
+                # If document_id is not an integer, treat it as a file path
+                cursor.execute("SELECT file_path FROM documents WHERE file_path = ?", (document_id,))
+            
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row:
+                file_path = row["file_path"]
+                from data import read_file_content
+                return read_file_content(file_path)
+            
+            self.logger.warning(f"Document {document_id} not found in database or project files")
+            return ""
+            
+        except Exception as e:
+            self.logger.error(f"Error retrieving document content: {e}")
+            return ""
 
 # Example Usage (for testing):
 if __name__ == "__main__":

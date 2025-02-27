@@ -162,10 +162,10 @@ struct ProjectRow: View {
                         let project = try JSONDecoder().decode(Project.self, from: projectJson)
                         
                         // Also load characters if available
-                        var characters: [Character] = []
+                        var characters: [CharacterModel] = []
                         if let charactersData = projectData["characters"] as? [[String: Any]] {
                             let charactersJson = try JSONSerialization.data(withJSONObject: charactersData, options: [])
-                            characters = try JSONDecoder().decode([Character].self, from: charactersJson)
+                            characters = try JSONDecoder().decode([CharacterModel].self, from: charactersJson)
                         }
                         
                         // Also load files if available

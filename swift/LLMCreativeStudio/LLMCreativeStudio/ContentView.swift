@@ -26,14 +26,21 @@ struct ContentView: View {
                }
                .tag(1)
            
+           // Files Tab
+           FileUploadView()
+               .tabItem {
+                   Label("Files", systemImage: "doc.fill")
+               }
+               .tag(2)
+           
            // Characters Tab
            CharacterView()
                .tabItem {
                    Label("Characters", systemImage: "person.2")
                }
-               .tag(2)
+               .tag(3)
        }
-       .frame(minWidth: 700, minHeight: 600)
+       .frame(minWidth: 800, minHeight: 600)
    }
    
    private var chatView: some View {
@@ -100,7 +107,7 @@ struct ContentView: View {
                ScrollViewReader { scrollView in
                    ZStack {
                        // Full-width background that fills entire scroll area
-                       Color.background
+                       Color(NSColor.windowBackgroundColor)
                            .ignoresSafeArea()
                        
                        // Messages container
@@ -126,7 +133,7 @@ struct ContentView: View {
                    }
                }
            }
-           .background(Color.background)
+           .background(Color(NSColor.windowBackgroundColor))
            .padding([.top, .leading, .trailing])
            .padding(.trailing, 8) // Extra padding for scrollbar
            
@@ -194,7 +201,7 @@ struct ContentView: View {
 }
 
 struct CharacterIndicator: View {
-    let character: Character
+    let character: CharacterModel
     
     var body: some View {
         HStack {

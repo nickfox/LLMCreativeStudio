@@ -5,20 +5,20 @@ import Combine
 protocol ProjectStoreProtocol {
     var projects: [Project] { get }
     var currentProject: Project? { get }
-    var characters: [Character] { get }
+    var characters: [CharacterModel] { get }
     var files: [ProjectFile] { get }
     var isLoading: Bool { get }
     
     var projectsPublisher: Published<[Project]>.Publisher { get }
     var currentProjectPublisher: Published<Project?>.Publisher { get }
-    var charactersPublisher: Published<[Character]>.Publisher { get }
+    var charactersPublisher: Published<[CharacterModel]>.Publisher { get }
     var filesPublisher: Published<[ProjectFile]>.Publisher { get }
     var isLoadingPublisher: Published<Bool>.Publisher { get }
     
     func setLoading(_ loading: Bool)
     func updateProjects(_ projects: [Project])
     func updateCurrentProject(_ project: Project?)
-    func updateCharacters(_ characters: [Character])
+    func updateCharacters(_ characters: [CharacterModel])
     func updateFiles(_ files: [ProjectFile])
 }
 
@@ -26,13 +26,13 @@ protocol ProjectStoreProtocol {
 class ProjectStore: ProjectStoreProtocol, ObservableObject {
     @Published var projects: [Project] = []
     @Published var currentProject: Project? = nil
-    @Published var characters: [Character] = []
+    @Published var characters: [CharacterModel] = []
     @Published var files: [ProjectFile] = []
     @Published var isLoading: Bool = false
     
     var projectsPublisher: Published<[Project]>.Publisher { $projects }
     var currentProjectPublisher: Published<Project?>.Publisher { $currentProject }
-    var charactersPublisher: Published<[Character]>.Publisher { $characters }
+    var charactersPublisher: Published<[CharacterModel]>.Publisher { $characters }
     var filesPublisher: Published<[ProjectFile]>.Publisher { $files }
     var isLoadingPublisher: Published<Bool>.Publisher { $isLoading }
     
@@ -54,7 +54,7 @@ class ProjectStore: ProjectStoreProtocol, ObservableObject {
         }
     }
     
-    func updateCharacters(_ characters: [Character]) {
+    func updateCharacters(_ characters: [CharacterModel]) {
         DispatchQueue.main.async {
             self.characters = characters
         }

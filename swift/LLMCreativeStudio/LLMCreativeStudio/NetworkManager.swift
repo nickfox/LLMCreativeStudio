@@ -1,4 +1,4 @@
-// /Users/nickfox137/Documents/llm-creative-studio/swift/LLMCreativeStudio/LLMCreativeStudio/NetworkManager.swift
+// NetworkManager.swift
 
 import Foundation
 import Combine
@@ -17,7 +17,7 @@ struct Project: Identifiable, Codable {
     }
 }
 
-struct Character: Identifiable, Codable {
+struct CharacterModel: Identifiable, Codable {
     let id: String
     let character_name: String
     let llm_name: String
@@ -43,494 +43,275 @@ struct ProjectFile: Identifiable, Codable {
     }
 }
 
+struct RAGSource: Identifiable, Codable {
+    let id = UUID()
+    let document_id: String
+    let chunk_id: Int
+    let similarity: Double
+    let text_preview: String
+    
+    enum CodingKeys: String, CodingKey {
+        case document_id, chunk_id, similarity, text_preview
+    }
+}
+
+struct RAGMetadata: Codable {
+    let retrieval_time_ms: Int
+    let generation_time_ms: Int
+    let total_time_ms: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case retrieval_time_ms, generation_time_ms, total_time_ms
+    }
+}
+
+struct ProcessingResults {
+    let total: Int
+    let processed: Int
+    let failed: Int
+    let details: [[String: Any]]
+}
+
 class NetworkManager: ObservableObject {
     @Published var messages: [Message] = []
     @Published var currentConversationMode: String = "open"
     @Published var projects: [Project] = []
-    @Published var currentProject: Project? = nil
-    @Published var characters: [Character] = []
+    @Published var currentProject: Project?
+    @Published var characters: [CharacterModel] = []
     @Published var files: [ProjectFile] = []
     @Published var isLoading: Bool = false
-    @Published var sessionId: String = UUID().uuidString
     
-    private let baseURL = "http://localhost:8000"
+    let baseURL = "http://localhost:8000"
+    var sessionId = UUID().uuidString
     
-    func sendMessage(message: String, llmName: String, dataQuery: String = "", sessionId: String) {
+    // MARK: - Chat Methods
+    
+    func addMessage(text: String, sender: String, senderName: String) {
+        let message = Message(
+            text: text,
+            sender: sender,
+            senderName: senderName
+        )
+        DispatchQueue.main.async {
+            self.messages.append(message)
+        }
+    }
+    
+    func clearMessages() {
+        DispatchQueue.main.async {
+            self.messages.removeAll()
+        }
+    }
+    
+    func parseMessage(_ message: String) -> (llmName: String, message: String, dataQuery: String) {
+        // Default values
+        var llmName = "all"  // Changed from "claude" to "all" to route to all LLMs by default
+        var parsedMessage = message
+        var dataQuery = ""
+        
+        // Check for RAG query
+        if message.hasPrefix("?") {
+            return ("rag", message, "")
+        }
+        
+        // Check for @mentions
+        let mentionPrefixes = ["@claude", "@chatgpt", "@gemini", "@all"]
+        for prefix in mentionPrefixes {
+            if message.lowercased().hasPrefix(prefix.lowercased()) {
+                // Extract LLM name without the @
+                llmName = String(prefix.dropFirst())
+                
+                // Remove the prefix from the message
+                parsedMessage = message.dropFirst(prefix.count).trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                break
+            }
+        }
+        
+        // Check for data query (:: separator)
+        if parsedMessage.contains("::") {
+            let components = parsedMessage.components(separatedBy: "::")
+            if components.count >= 2 {
+                parsedMessage = components[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                dataQuery = components[1].trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        
+        return (llmName, parsedMessage, dataQuery)
+    }
+    
+    func sendMessage(message: String, llmName: String, dataQuery: String, sessionId: String) {
+        // If RAG query, handle differently
+        if llmName == "rag" {
+            sendRAGQuery(query: message) { [weak self] result in
+                switch result {
+                case .success(let ragMessage):
+                    DispatchQueue.main.async {
+                        self?.messages.append(ragMessage)
+                    }
+                case .failure(let error):
+                    print("RAG query error: \(error)")
+                    DispatchQueue.main.async {
+                        self?.addMessage(
+                            text: "Error processing RAG query: \(error.localizedDescription)",
+                            sender: "system",
+                            senderName: "System"
+                        )
+                    }
+                }
+            }
+            return
+        }
+        
         guard let url = URL(string: "\(baseURL)/chat") else {
             print("Invalid URL")
             return
         }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let lastMessageId = messages.last?.id
         
-        var json: [String: Any] = [
+        let json: [String: Any] = [
             "llm_name": llmName,
             "message": message,
             "data_query": dataQuery,
             "session_id": sessionId,
-            "conversation_mode": currentConversationMode,
-            "referenced_message_id": lastMessageId?.uuidString as Any,
-            "context": getRecentContext()
+            "project_id": currentProject?.id as Any,
+            "conversation_mode": currentConversationMode
         ]
         
-        // Add project ID if one is selected
-        if let projectId = currentProject?.id {
-            json["project_id"] = projectId
-        }
-
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
         do {
-            let jsonData = try JSONSerialization.data(withJSONObject: json, options: .prettyPrinted)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                print("Sending JSON payload:")
-                print(jsonString)
-            }
+            let jsonData = try JSONSerialization.data(withJSONObject: json)
             request.httpBody = jsonData
-        } catch {
-            print("Error serializing JSON: \(error)")
-            return
-        }
-
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("Error: \(error)")
-                return
-            }
-
-            if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status Code: \(httpResponse.statusCode)")
-
-                if (200...299).contains(httpResponse.statusCode) {
-                    if let data = data {
-                        print("Received raw response from server:")
-                        print(String(data: data, encoding: .utf8) ?? "Could not decode response")
-                        
-                        if let jsonResponse = try? JSONSerialization.jsonObject(with: data, options: []) {
-                            print("Parsed JSON response type: \(type(of: jsonResponse))")
-                            print("Parsed JSON response content: \(jsonResponse)")
-                            
-                            DispatchQueue.main.async { [weak self] in
-                                guard let self = self else { return }
-                                print("Current messages count before processing: \(self.messages.count)")
-                                
-                                if let responseDict = jsonResponse as? [String: Any],
-                                   let responseText = responseDict["response"] as? String,
-                                   let llmName = responseDict["llm"] as? String {
-                                    print("Processing single response from \(llmName)")
-                                    let llmMessage = Message(
-                                        text: responseText,
-                                        sender: llmName,
-                                        senderName: self.getSenderName(for: llmName),
-                                        timestamp: Date()
-                                    )
-                                    self.messages.append(llmMessage)
-                                } else if let responseArray = jsonResponse as? [[String: Any]] {
-                                    print("Processing array of \(responseArray.count) responses")
-                                    for responseDict in responseArray {
-                                        // Handle both old and new response formats
-                                        if let responseText = responseDict["response"] as? String,
-                                           let llmName = responseDict["llm"] as? String {
-                                            // Old format
-                                            print("Processing array response from \(llmName)")
-                                            let llmMessage = Message(
-                                                text: responseText,
-                                                sender: llmName,
-                                                senderName: self.getSenderName(for: llmName),
-                                                timestamp: Date()
-                                            )
-                                            self.messages.append(llmMessage)
-                                        } else if let contentText = responseDict["content"] as? String,
-                                                  let sender = responseDict["sender"] as? String {
-                                            // New debate format
-                                            print("Processing debate response from \(sender)")
-                                            
-                                            // Get debate metadata
-                                            let debateRound = responseDict["debate_round"] as? Int
-                                            let debateState = responseDict["debate_state"] as? String
-                                            let waitingForUser = responseDict["waiting_for_user"] as? Bool
-                                            let actionRequired = responseDict["action_required"] as? String
-                                            
-                                            // Add special formatting for prompts waiting for user input
-                                            let displayText = contentText
-                                            
-                                            // Create the message with all debate properties
-                                            let llmMessage = Message(
-                                                text: displayText,
-                                                sender: sender,
-                                                senderName: self.getSenderName(for: sender),
-                                                timestamp: Date(),
-                                                referencedMessageId: nil,
-                                                conversationMode: "debate",
-                                                messageIntent: nil,
-                                                debateRound: debateRound,
-                                                debateState: debateState,
-                                                waitingForUser: waitingForUser,
-                                                actionRequired: actionRequired
-                                            )
-                                            self.messages.append(llmMessage)
-                                        }
-                                    }
-                                }
-                                print("Current messages count after processing: \(self.messages.count)")
-                            }
-                        } else {
-                            print("Failed to parse JSON response")
-                        }
-                    }
-                } else {
-                    if let data = data,
-                       let errorResponse = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                        print("Error Response from Server:")
-                        print(errorResponse)
-                    } else if let data = data, let errorString = String(data: data, encoding: .utf8) {
-                        print("Error Response from Server:")
-                        print(errorString)
-                    }
-                }
-            }
-        }
-        task.resume()
-    }
-    
-    func getRecentContext() -> [[String: Any]] {
-        let contextMessages = messages.suffix(5)
-        return contextMessages.map { message in
-            return [
-                "id": message.id.uuidString,
-                "text": message.text,
-                "sender": message.sender,
-                "senderName": message.senderName,
-                "timestamp": message.timestamp.timeIntervalSince1970,
-                "referencedMessageId": message.referencedMessageId?.uuidString as Any,
-                "messageIntent": message.messageIntent as Any
-            ]
-        }
-    }
-
-    func addMessage(text: String, sender: String, senderName: String, referencedMessageId: UUID? = nil, messageIntent: String? = nil) {
-        DispatchQueue.main.async {
-            let newMessage = Message(
-                text: text,
-                sender: sender,
-                senderName: senderName,
-                referencedMessageId: referencedMessageId,
-                conversationMode: self.currentConversationMode,
-                messageIntent: messageIntent
-            )
-            self.messages.append(newMessage)
-        }
-    }
-
-    func clearMessages() {
-        DispatchQueue.main.async {
-            self.messages = []
-        }
-    }
-    
-    func parseMessage(_ message: String) -> (llmName: String, parsedMessage: String, dataQuery: String) {
-        let mentionRegex = try! NSRegularExpression(pattern: "@([a-zA-Z]+)", options: [])
-        let matches = mentionRegex.matches(in: message, options: [], range: NSRange(location: 0, length: message.utf16.count))
-
-        var llmName = "all"
-        var dataQuery = ""
-        var parsedMessage = message
-
-        if let match = matches.first {
-            let mentionRange = Range(match.range(at: 1), in: message)!
-            let mention = String(message[mentionRange])
-
-            parsedMessage = message.replacingCharacters(in: Range(match.range, in: message)!, with: "")
-            parsedMessage = parsedMessage.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            switch mention.lowercased() {
-            case "a", "claude":
-                llmName = "claude"
-            case "c": // Changed from "chatgpt" to "claude" to match the Python code change
-                llmName = "claude"
-            case "chatgpt":
-                llmName = "chatgpt"
-            case "g", "gemini":
-                llmName = "gemini"
-            case "q":
-                llmName = "gemini"
-                dataQuery = parsedMessage
-                parsedMessage = ""
-            default:
-                // Check if the mention matches a character name
-                if let character = characters.first(where: { $0.character_name.lowercased() == mention.lowercased() }) {
-                    llmName = character.llm_name
-                } else {
-                    llmName = "all"
-                }
-            }
-        } else if currentProject != nil && !characters.isEmpty {
-            // Check if the message begins with a character name
-            for character in characters {
-                let characterName = character.character_name
-                if message.lowercased().hasPrefix(characterName.lowercased() + ",") ||
-                   message.lowercased().hasPrefix(characterName.lowercased() + " ") {
-                    llmName = character.llm_name
-                    let rangeToRemove = message.range(of: characterName, options: [.caseInsensitive])
-                    if let rangeToRemove = rangeToRemove {
-                        var modifiedMessage = message
-                        modifiedMessage.removeSubrange(rangeToRemove)
-                        parsedMessage = modifiedMessage.trimmingCharacters(in: CharacterSet(charactersIn: " ,"))
-                        break
-                    }
-                }
-            }
-        }
-
-        return (llmName, parsedMessage, dataQuery)
-    }
-
-    func getSenderName(for llmName: String) -> String {
-        // Check if this LLM has a character assigned
-        if let character = characters.first(where: { $0.llm_name == llmName }) {
-            return character.character_name
-        }
-        
-        // Otherwise, return the default name
-        switch llmName.lowercased() {
-        case "gemini":
-            return "Gemini"
-        case "chatgpt":
-            return "ChatGPT"
-        case "claude":
-            return "Claude"
-        case "user":
-            return "nick"
-        case "system":
-            return "System"
-        default:
-            return "Unknown"
-        }
-    }
-    
-    // Methods for Project Management
-    
-    func fetchProjects(completion: ((Error?) -> Void)? = nil) {
-        isLoading = true
-        guard let url = URL(string: "\(baseURL)/projects") else {
-            print("Invalid URL")
-            isLoading = false
-            completion?(NSError(domain: "Invalid URL", code: 0, userInfo: nil))
-            return
-        }
-        
-        let task = URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-                
+            
+            let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
                 if let error = error {
-                    print("Error fetching projects: \(error)")
-                    completion?(error)
+                    print("Error sending message: \(error)")
+                    DispatchQueue.main.async {
+                        self?.addMessage(
+                            text: "Error: \(error.localizedDescription)",
+                            sender: "system",
+                            senderName: "System"
+                        )
+                    }
                     return
                 }
                 
                 guard let data = data else {
                     print("No data received")
-                    completion?(NSError(domain: "No data received", code: 0, userInfo: nil))
                     return
                 }
                 
                 do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                       let projectsData = json["projects"] as? [[String: Any]] {
-                        let decoder = JSONDecoder()
-                        let projectsData = try JSONSerialization.data(withJSONObject: projectsData, options: [])
-                        let projects = try decoder.decode([Project].self, from: projectsData)
-                        self?.projects = projects
-                        completion?(nil)
+                    if let responsesArray = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
+                        
+                        for responseDict in responsesArray {
+                            var text = ""
+                            var sender = "system"
+                            var senderName = "System"
+                            let referencedMessageId: UUID? = nil
+                            let conversationMode: String? = nil
+                            let messageIntent: String? = nil
+                            var debateRound: Int? = nil
+                            var debateState: String? = nil
+                            var waitingForUser: Bool? = nil
+                            var actionRequired: String? = nil
+                            
+                            // Handle both response formats
+                            if let content = responseDict["content"] as? String {
+                                text = content
+                                sender = responseDict["sender"] as? String ?? "system"
+                                
+                                // Determine sender name from sender
+                                switch sender.lowercased() {
+                                case "claude": senderName = "Claude"
+                                case "chatgpt": senderName = "ChatGPT"
+                                case "gemini": senderName = "Gemini"
+                                case "system": senderName = "System"
+                                case "research_assistant": senderName = "Research Assistant"
+                                default: senderName = sender.capitalized
+                                }
+                                
+                                // Check for debate properties
+                                if let round = responseDict["debate_round"] as? Int {
+                                    debateRound = round
+                                }
+                                
+                                if let state = responseDict["debate_state"] as? String {
+                                    debateState = state
+                                }
+                                
+                                if let waiting = responseDict["waiting_for_user"] as? Bool {
+                                    waitingForUser = waiting
+                                }
+                                
+                                if let action = responseDict["action_required"] as? String {
+                                    actionRequired = action
+                                }
+                                
+                            } else if let response = responseDict["response"] as? String {
+                                text = response
+                                
+                                if let llm = responseDict["llm"] as? String {
+                                    sender = llm
+                                    
+                                    // Determine sender name from LLM
+                                    switch llm.lowercased() {
+                                    case "claude": senderName = "Claude"
+                                    case "chatgpt": senderName = "ChatGPT"
+                                    case "gemini": senderName = "Gemini"
+                                    case "system": senderName = "System"
+                                    default: senderName = llm.capitalized
+                                    }
+                                }
+                            }
+                            
+                            // Create and add the message
+                            DispatchQueue.main.async {
+                                let message = Message(
+                                    text: text,
+                                    sender: sender,
+                                    senderName: senderName,
+                                    referencedMessageId: referencedMessageId,
+                                    conversationMode: conversationMode,
+                                    messageIntent: messageIntent,
+                                    debateRound: debateRound,
+                                    debateState: debateState,
+                                    waitingForUser: waitingForUser,
+                                    actionRequired: actionRequired
+                                )
+                                self?.messages.append(message)
+                            }
+                        }
                     }
                 } catch {
-                    print("Error parsing projects: \(error)")
-                    completion?(error)
+                    print("Error parsing response: \(error)")
+                    DispatchQueue.main.async {
+                        self?.addMessage(
+                            text: "Error parsing response: \(error.localizedDescription)",
+                            sender: "system",
+                            senderName: "System"
+                        )
+                    }
                 }
             }
-        }
-        task.resume()
-    }
-    
-    func createProject(name: String, type: String, description: String, completion: @escaping (Result<String, Error>) -> Void) {
-        isLoading = true
-        guard let url = URL(string: "\(baseURL)/projects") else {
-            isLoading = false
-            completion(.failure(NSError(domain: "Invalid URL", code: 0, userInfo: nil)))
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let json: [String: Any] = [
-            "name": name,
-            "type": type,
-            "description": description,
-            "metadata": [String: String]()
-        ]
-        
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: json, options: .prettyPrinted)
-            request.httpBody = jsonData
+            task.resume()
+            
         } catch {
-            isLoading = false
-            completion(.failure(error))
-            return
+            print("Error encoding JSON: \(error)")
+            addMessage(
+                text: "Error sending message: \(error.localizedDescription)",
+                sender: "system",
+                senderName: "System"
+            )
         }
-        
-        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-                
-                if let error = error {
-                    completion(.failure(error))
-                    return
-                }
-                
-                guard let data = data else {
-                    completion(.failure(NSError(domain: "No data received", code: 0, userInfo: nil)))
-                    return
-                }
-                
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                       let projectId = json["project_id"] as? String {
-                        self?.fetchProjects(completion: nil)
-                        completion(.success(projectId))
-                    } else {
-                        completion(.failure(NSError(domain: "Invalid response format", code: 0, userInfo: nil)))
-                    }
-                } catch {
-                    completion(.failure(error))
-                }
-            }
-        }
-        task.resume()
     }
     
-    func getProject(projectId: String, completion: @escaping (Result<Project, Error>) -> Void) {
-        isLoading = true
-        guard let url = URL(string: "\(baseURL)/projects/\(projectId)") else {
-            isLoading = false
-            completion(.failure(NSError(domain: "Invalid URL", code: 0, userInfo: nil)))
-            return
-        }
-        
-        let task = URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-                
-                if let error = error {
-                    completion(.failure(error))
-                    return
-                }
-                
-                guard let data = data else {
-                    completion(.failure(NSError(domain: "No data received", code: 0, userInfo: nil)))
-                    return
-                }
-                
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                       let projectData = json["project"] as? [String: Any] {
-                        let projectJson = try JSONSerialization.data(withJSONObject: projectData, options: [])
-                        let decoder = JSONDecoder()
-                        let project = try decoder.decode(Project.self, from: projectJson)
-                        self?.currentProject = project
-                        
-                        // Also load characters
-                        if let charactersData = projectData["characters"] as? [[String: Any]] {
-                            let charactersJson = try JSONSerialization.data(withJSONObject: charactersData, options: [])
-                            self?.characters = try decoder.decode([Character].self, from: charactersJson)
-                        }
-                        
-                        // Also load files
-                        if let filesData = projectData["files"] as? [[String: Any]] {
-                            let filesJson = try JSONSerialization.data(withJSONObject: filesData, options: [])
-                            self?.files = try decoder.decode([ProjectFile].self, from: filesJson)
-                        }
-                        
-                        completion(.success(project))
-                    } else {
-                        completion(.failure(NSError(domain: "Invalid response format", code: 0, userInfo: nil)))
-                    }
-                } catch {
-                    completion(.failure(error))
-                }
-            }
-        }
-        task.resume()
-    }
+    // MARK: - RAG Methods
     
-    func addCharacter(projectId: String, characterName: String, llmName: String, background: String = "", completion: @escaping (Result<String, Error>) -> Void) {
-        isLoading = true
-        guard let url = URL(string: "\(baseURL)/projects/\(projectId)/characters") else {
-            isLoading = false
-            completion(.failure(NSError(domain: "Invalid URL", code: 0, userInfo: nil)))
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let json: [String: Any] = [
-            "character_name": characterName,
-            "llm_name": llmName,
-            "background": background
-        ]
-        
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: json, options: .prettyPrinted)
-            request.httpBody = jsonData
-        } catch {
-            isLoading = false
-            completion(.failure(error))
-            return
-        }
-        
-        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-                
-                if let error = error {
-                    completion(.failure(error))
-                    return
-                }
-                
-                guard let data = data else {
-                    completion(.failure(NSError(domain: "No data received", code: 0, userInfo: nil)))
-                    return
-                }
-                
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                       let characterId = json["character_id"] as? String {
-                        // Refresh the characters list
-                        if let projectId = self?.currentProject?.id {
-                            self?.getProject(projectId: projectId) { _ in }
-                        }
-                        completion(.success(characterId))
-                    } else {
-                        completion(.failure(NSError(domain: "Invalid response format", code: 0, userInfo: nil)))
-                    }
-                } catch {
-                    completion(.failure(error))
-                }
-            }
-        }
-        task.resume()
-    }
-    
-    func restoreSession(projectId: String, sessionId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
-        isLoading = true
-        guard let url = URL(string: "\(baseURL)/sessions/\(projectId)/restore/\(sessionId)") else {
-            isLoading = false
+    func processDocumentForRAG(projectId: String, documentId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/projects/\(projectId)/documents/\(documentId)/process") else {
             completion(.failure(NSError(domain: "Invalid URL", code: 0, userInfo: nil)))
             return
         }
@@ -538,29 +319,34 @@ class NetworkManager: ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         
-        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-                
-                if let error = error {
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                DispatchQueue.main.async {
                     completion(.failure(error))
-                    return
                 }
-                
-                guard let data = data else {
+                return
+            }
+            
+            guard let data = data else {
+                DispatchQueue.main.async {
                     completion(.failure(NSError(domain: "No data received", code: 0, userInfo: nil)))
-                    return
                 }
-                
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                       let mode = json["conversation_mode"] as? String {
-                        self?.currentConversationMode = mode
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let _ = json["message"] as? String {
+                    DispatchQueue.main.async {
                         completion(.success(true))
-                    } else {
+                    }
+                } else {
+                    DispatchQueue.main.async {
                         completion(.failure(NSError(domain: "Invalid response format", code: 0, userInfo: nil)))
                     }
-                } catch {
+                }
+            } catch {
+                DispatchQueue.main.async {
                     completion(.failure(error))
                 }
             }
@@ -568,88 +354,348 @@ class NetworkManager: ObservableObject {
         task.resume()
     }
     
-    func uploadFile(projectId: String, fileURL: URL, description: String = "", isReference: Bool = false, isOutput: Bool = false, completion: @escaping (Result<String, Error>) -> Void) {
-        isLoading = true
-        guard let url = URL(string: "\(baseURL)/projects/\(projectId)/files") else {
-            isLoading = false
+    func processAllDocumentsForRAG(projectId: String, completion: @escaping (Result<ProcessingResults, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/projects/\(projectId)/process_all_documents") else {
             completion(.failure(NSError(domain: "Invalid URL", code: 0, userInfo: nil)))
             return
         }
         
-        // Create a boundary string for multipart form data
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+                return
+            }
+            
+            guard let data = data else {
+                DispatchQueue.main.async {
+                    completion(.failure(NSError(domain: "No data received", code: 0, userInfo: nil)))
+                }
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let total = json["total_documents"] as? Int,
+                   let processed = json["processed"] as? Int,
+                   let failed = json["failed"] as? Int {
+                    
+                    let details = json["details"] as? [[String: Any]] ?? []
+                    
+                    let results = ProcessingResults(
+                        total: total,
+                        processed: processed,
+                        failed: failed,
+                        details: details
+                    )
+                    
+                    DispatchQueue.main.async {
+                        completion(.success(results))
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        completion(.failure(NSError(domain: "Invalid response format", code: 0, userInfo: nil)))
+                    }
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+            }
+        }
+        task.resume()
+    }
+    
+    func sendRAGQuery(query: String, completion: @escaping (Result<Message, Error>) -> Void) {
+        guard let projectId = currentProject?.id else {
+            completion(.failure(NSError(domain: "No project selected", code: 0, userInfo: nil)))
+            return
+        }
+        
+        guard let url = URL(string: "\(baseURL)/rag/query") else {
+            completion(.failure(NSError(domain: "Invalid URL", code: 0, userInfo: nil)))
+            return
+        }
+        
+        // Remove ? prefix if present
+        let cleanQuery = query.hasPrefix("?") ? String(query.dropFirst()).trimmingCharacters(in: .whitespacesAndNewlines) : query
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let json: [String: Any] = [
+            "query": cleanQuery,
+            "project_id": projectId,
+            "use_thinking": false
+        ]
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: json, options: .prettyPrinted)
+            request.httpBody = jsonData
+        } catch {
+            completion(.failure(error))
+            return
+        }
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+                return
+            }
+            
+            guard let data = data else {
+                DispatchQueue.main.async {
+                    completion(.failure(NSError(domain: "No data received", code: 0, userInfo: nil)))
+                }
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let answer = json["answer"] as? String {
+                    
+                    // Get sources if available
+                    var sourcesText = ""
+                    if let sources = json["sources"] as? [[String: Any]], !sources.isEmpty {
+                        sourcesText = "\n\nSources:\n"
+                        for (index, source) in sources.enumerated() {
+                            if let docId = source["document_id"] as? String,
+                               let preview = source["text_preview"] as? String,
+                               let similarity = source["similarity"] as? Double {
+                                sourcesText += "\(index + 1). Document \(docId) (Relevance: \(String(format: "%.0f%%", similarity * 100))):\n\(preview)\n\n"
+                            }
+                        }
+                    }
+                    
+                    // Create a message with the RAG response
+                    let message = Message(
+                        text: answer + sourcesText,
+                        sender: "research_assistant",
+                        senderName: "Research Assistant",
+                        timestamp: Date()
+                    )
+                    
+                    DispatchQueue.main.async {
+                        completion(.success(message))
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        completion(.failure(NSError(domain: "Invalid response format", code: 0, userInfo: nil)))
+                    }
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+            }
+        }
+        task.resume()
+    }
+    
+    // MARK: - File Management Methods
+    
+    func uploadFile(projectId: String, fileURL: URL, description: String, isReference: Bool, completion: @escaping (Result<String, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/projects/\(projectId)/files") else {
+            completion(.failure(NSError(domain: "Invalid URL", code: 0, userInfo: nil)))
+            return
+        }
+        
+        // Create a boundary for multipart form data
         let boundary = UUID().uuidString
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         
-        var body = Data()
-        
-        // Add the file data
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileURL.lastPathComponent)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
-        
+        // Create the form data
         do {
             let fileData = try Data(contentsOf: fileURL)
-            body.append(fileData)
-            body.append("\r\n".data(using: .utf8)!)
+            let filename = fileURL.lastPathComponent
+            let mimeType = mimeTypeForPath(path: fileURL.path)
             
-            // Add description
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"description\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(description)\r\n".data(using: .utf8)!)
+            var formData = Data()
             
-            // Add isReference
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"is_reference\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(isReference)\r\n".data(using: .utf8)!)
+            // Add file part
+            formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+            formData.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+            formData.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+            formData.append(fileData)
+            formData.append("\r\n".data(using: .utf8)!)
             
-            // Add isOutput
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"is_output\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(isOutput)\r\n".data(using: .utf8)!)
+            // Add description part
+            formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+            formData.append("Content-Disposition: form-data; name=\"description\"\r\n\r\n".data(using: .utf8)!)
+            formData.append("\(description)\r\n".data(using: .utf8)!)
             
-            // End the form
-            body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+            // Add is_reference part
+            formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+            formData.append("Content-Disposition: form-data; name=\"is_reference\"\r\n\r\n".data(using: .utf8)!)
+            formData.append("\(isReference)\r\n".data(using: .utf8)!)
             
-            request.httpBody = body
-        } catch {
-            isLoading = false
-            completion(.failure(error))
-            return
-        }
-        
-        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-                
+            // Add is_output part
+            formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+            formData.append("Content-Disposition: form-data; name=\"is_output\"\r\n\r\n".data(using: .utf8)!)
+            formData.append("\(!isReference)\r\n".data(using: .utf8)!)
+            
+            // Add closing boundary
+            formData.append("--\(boundary)--\r\n".data(using: .utf8)!)
+            
+            request.httpBody = formData
+            
+            let task = URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
-                    completion(.failure(error))
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
                     return
                 }
                 
                 guard let data = data else {
-                    completion(.failure(NSError(domain: "No data received", code: 0, userInfo: nil)))
+                    DispatchQueue.main.async {
+                        completion(.failure(NSError(domain: "No data received", code: 0, userInfo: nil)))
+                    }
                     return
                 }
                 
                 do {
                     if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                        let fileId = json["file_id"] as? String {
-                        // Refresh files list
-                        if let projectId = self?.currentProject?.id {
-                            self?.getProject(projectId: projectId) { _ in }
+                        DispatchQueue.main.async {
+                            completion(.success(fileId))
                         }
-                        completion(.success(fileId))
                     } else {
-                        completion(.failure(NSError(domain: "Invalid response format", code: 0, userInfo: nil)))
+                        DispatchQueue.main.async {
+                            completion(.failure(NSError(domain: "Invalid response format", code: 0, userInfo: nil)))
+                        }
                     }
                 } catch {
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
+                }
+            }
+            
+            task.resume()
+            
+        } catch {
+            completion(.failure(error))
+        }
+    }
+    
+    func downloadFile(projectId: String, fileId: String, completion: @escaping (Result<URL, Error>) -> Void) {
+        let downloadURL = URL(string: "\(baseURL)/projects/\(projectId)/files/\(fileId)/download")!
+        
+        let task = URLSession.shared.downloadTask(with: downloadURL) { tempURL, response, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+                return
+            }
+            
+            guard let tempURL = tempURL else {
+                DispatchQueue.main.async {
+                    completion(.failure(NSError(domain: "No file downloaded", code: 0, userInfo: nil)))
+                }
+                return
+            }
+            
+            // Get the suggested filename from the response headers
+            var filename = "downloaded_file"
+            if let disposition = (response as? HTTPURLResponse)?.allHeaderFields["Content-Disposition"] as? String {
+                let filenameRange = disposition.range(of: "filename=")
+                if let range = filenameRange {
+                    let filenameWithQuotes = disposition[range.upperBound...]
+                    filename = filenameWithQuotes.replacingOccurrences(of: "\"", with: "")
+                    if filename.contains(";") {
+                        filename = filename.components(separatedBy: ";").first ?? filename
+                    }
+                }
+            }
+            
+            // Create a unique path in the Downloads directory
+            let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
+            let destinationURL = downloadsURL.appendingPathComponent(filename)
+            
+            // Remove any existing file
+            try? FileManager.default.removeItem(at: destinationURL)
+            
+            do {
+                // Move the file to the destination
+                try FileManager.default.moveItem(at: tempURL, to: destinationURL)
+                
+                DispatchQueue.main.async {
+                    completion(.success(destinationURL))
+                }
+            } catch {
+                DispatchQueue.main.async {
                     completion(.failure(error))
                 }
             }
         }
+        
         task.resume()
+    }
+    
+    func loadProjectFiles(projectId: String) {
+        let url = URL(string: "\(baseURL)/projects/\(projectId)/files")!
+        
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            guard let self = self else { return }
+            
+            guard error == nil, let data = data else {
+                print("Error loading files: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let filesData = json["files"] as? [[String: Any]] {
+                    let filesJson = try JSONSerialization.data(withJSONObject: filesData, options: [])
+                    let files = try JSONDecoder().decode([ProjectFile].self, from: filesJson)
+                    
+                    DispatchQueue.main.async {
+                        self.files = files
+                    }
+                }
+            } catch {
+                print("Error parsing files: \(error)")
+            }
+        }.resume()
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func mimeTypeForPath(path: String) -> String {
+        let url = URL(fileURLWithPath: path)
+        let pathExtension = url.pathExtension
+        
+        switch pathExtension.lowercased() {
+        case "pdf":
+            return "application/pdf"
+        case "txt":
+            return "text/plain"
+        case "md":
+            return "text/markdown"
+        case "docx":
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        case "csv":
+            return "text/csv"
+        case "xlsx":
+            return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        case "jpg", "jpeg":
+            return "image/jpeg"
+        case "png":
+            return "image/png"
+        default:
+            return "application/octet-stream"
+        }
     }
 }

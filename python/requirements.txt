@@ -14,3 +14,5 @@ langchain-anthropic
 langchain-core
 pyautogen>=0.2.0
 pytest-asyncio>=0.21.0
+httpx>=0.24.0
+numpy>=1.24.0

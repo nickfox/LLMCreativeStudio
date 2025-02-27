@@ -33,7 +33,7 @@ protocol APIServiceProtocol {
     func sendMessage(message: String, llmName: String, dataQuery: String, sessionId: String, currentConversationMode: String, projectId: String?, recentContext: [[String: Any]]) async throws -> [MessageResponse]
     func fetchProjects() async throws -> [Project]
     func createProject(name: String, type: String, description: String) async throws -> String
-    func getProject(projectId: String) async throws -> (Project, [Character], [ProjectFile])
+    func getProject(projectId: String) async throws -> (Project, [CharacterModel], [ProjectFile])
     func addCharacter(projectId: String, characterName: String, llmName: String, background: String) async throws -> String
     func restoreSession(projectId: String, sessionId: String) async throws -> String
     func uploadFile(projectId: String, fileURL: URL, description: String, isReference: Bool, isOutput: Bool) async throws -> String
@@ -222,7 +222,7 @@ class NetworkService: APIServiceProtocol {
         return projectId
     }
     
-    func getProject(projectId: String) async throws -> (Project, [Character], [ProjectFile]) {
+    func getProject(projectId: String) async throws -> (Project, [CharacterModel], [ProjectFile]) {
         guard let url = URL(string: "\(baseURL)/projects/\(projectId)") else {
             throw NetworkError.invalidURL
         }
@@ -246,10 +246,10 @@ class NetworkService: APIServiceProtocol {
         let project = try decoder.decode(Project.self, from: projectJson)
         
         // Decode characters if available
-        var characters: [Character] = []
+        var characters: [CharacterModel] = []
         if let charactersData = projectData["characters"] as? [[String: Any]] {
             let charactersJson = try JSONSerialization.data(withJSONObject: charactersData)
-            characters = try decoder.decode([Character].self, from: charactersJson)
+            characters = try decoder.decode([CharacterModel].self, from: charactersJson)
         }
         
         // Decode files if available

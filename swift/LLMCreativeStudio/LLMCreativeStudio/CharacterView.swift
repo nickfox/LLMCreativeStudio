@@ -62,7 +62,7 @@ struct CharacterView: View {
 }
 
 struct CharacterRow: View {
-    let character: Character
+    let character: CharacterModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -259,7 +259,7 @@ struct AddCharacterView: View {
                                         // Load characters if available
                                         if let charactersData = projectData["characters"] as? [[String: Any]] {
                                             let charactersJson = try JSONSerialization.data(withJSONObject: charactersData, options: [])
-                                            let characters = try JSONDecoder().decode([Character].self, from: charactersJson)
+                                            let characters = try JSONDecoder().decode([CharacterModel].self, from: charactersJson)
                                             
                                             DispatchQueue.main.async {
                                                 networkManager.characters = characters

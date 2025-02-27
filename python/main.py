@@ -17,13 +17,16 @@ from pydantic import BaseModel, ValidationError, Field
 from datetime import datetime
 import uuid
 
+# Import Ollama service
+from ollama_service import OllamaService
+
 from config import DATA_DIR
 from llms import Gemini, ChatGPT, Claude
 from data import select_relevant_documents, read_file_content
 from utils import setup_logging
 from data_access import DataAccess
 from conversation_manager import ConversationManager
-from project_manager import ProjectManager
+from project_manager import ProjectManager, PROJECTS_DIR
 from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_community.chat_message_histories import SQLChatMessageHistory
 
@@ -48,6 +51,20 @@ conversation_managers = {}
 # Project manager - Handles project operations
 project_manager = ProjectManager()
 
+# --- Initialize Ollama Service ---
+ollama_service = OllamaService()
+try:
+    # Create an event loop and check availability
+    loop = asyncio.new_event_loop()
+    ollama_available = loop.run_until_complete(ollama_service.check_availability())
+    if ollama_available:
+        logging.info("Ollama service initialized successfully with phi4 and nomic-embed-text models")
+    else:
+        logging.warning("Ollama service initialized but models not available. RAG functionality will be limited.")
+except Exception as e:
+    logging.error(f"Failed to initialize Ollama service: {e}")
+    ollama_service = None
+
 # --- Pydantic Models ---
 
 class ChatRequest(BaseModel):
@@ -63,6 +80,14 @@ class ChatRequest(BaseModel):
     conversation_mode: str = "open"
     referenced_message_id: Optional[str] = None
     context: List[dict] = []
+
+class RAGQueryRequest(BaseModel):
+    """
+    Pydantic model for RAG queries.
+    """
+    query: str
+    project_id: str
+    use_thinking: bool = False
 
 class ProjectCreate(BaseModel):
     """
@@ -226,6 +251,44 @@ async def chat(chat_request: Request):
         else:
             enhanced_message = message
         
+        # Check for RAG query (message starts with ?)
+        if message.startswith("?") and ollama_service and project_id:
+            query = message[1:].strip()
+            if not query:
+                raise HTTPException(status_code=400, detail="RAG query cannot be empty")
+            
+            # Add user message to history
+            user_msg = {
+                "sender": "user",
+                "content": message,
+                "timestamp": datetime.now().isoformat()
+            }
+            conversation_manager.conversation_history.append(user_msg)
+            
+            # Process the query with Ollama
+            result = await ollama_service.answer_with_rag(
+                project_id=project_id,
+                query=query
+            )
+            
+            # Create response
+            response = {
+                "sender": "research_assistant",
+                "content": result["answer"],
+                "timestamp": datetime.now().isoformat(),
+                "sources": result["sources"] if "sources" in result else [],
+                "metadata": result["metadata"] if "metadata" in result else {}
+            }
+            
+            # Add to conversation history
+            conversation_manager.conversation_history.append(response)
+            
+            # If project ID is provided, save the conversation state
+            if project_id:
+                save_project_session(project_id, session_id, conversation_manager)
+            
+            return [response]
+            
         # Process the message through the conversation manager
         responses = await conversation_manager.process_message(enhanced_message, "user", llm_name if llm_name != "all" else None)
         
@@ -824,14 +887,128 @@ async def delete_file(project_id: str, file_id: str, delete_physical: bool = Tru
         logging.exception(f"Error deleting file: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- RAG Endpoints ---
+
+@app.post("/rag/query")
+async def rag_query(request: RAGQueryRequest):
+    """
+    Process a RAG query using Ollama to search project documents.
+    
+    Args:
+        request (RAGQueryRequest): RAG query request
+        
+    Returns:
+        Dict: RAG query results
+    """
+    try:
+        if not ollama_service:
+            raise HTTPException(status_code=503, detail="Ollama service is not available")
+        
+        # Process the query with Ollama
+        result = await ollama_service.answer_with_rag(
+            project_id=request.project_id,
+            query=request.query,
+            use_thinking=request.use_thinking
+        )
+        
+        return result
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception(f"Error processing RAG query: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/projects/{project_id}/documents/{document_id}/process")
+async def process_document_for_rag(project_id: str, document_id: str):
+    """
+    Process a document for RAG using Ollama.
+    
+    Args:
+        project_id (str): Project ID
+        document_id (str): Document ID to process
+        
+    Returns:
+        Dict: Success message
+    """
+    try:
+        if not ollama_service:
+            raise HTTPException(status_code=503, detail="Ollama service is not available")
+        
+        # Get the document content
+        content = await data_access.get_document_content(document_id)
+        if not content:
+            raise HTTPException(status_code=404, detail=f"Document {document_id} content not found")
+        
+        # Process the document
+        success = await ollama_service.process_document(
+            project_id=project_id,
+            document_id=document_id,
+            document_text=content
+        )
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to process document")
+        
+        return {"message": f"Document {document_id} processed successfully for RAG"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception(f"Error processing document for RAG: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/projects/{project_id}/process_all_documents")
+async def process_all_project_documents_for_rag(project_id: str):
+    """
+    Process all documents in a project for RAG using Ollama.
+    
+    Args:
+        project_id (str): Project ID
+        
+    Returns:
+        Dict: Results of processing all documents
+    """
+    try:
+        if not ollama_service:
+            raise HTTPException(status_code=503, detail="Ollama service is not available")
+        
+        # Check that project exists
+        project = project_manager.get_project(project_id)
+        if not project:
+            raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+        
+        # Process all documents
+        results = await ollama_service.process_all_project_documents(project_id)
+        
+        if not results.get("success", False):
+            logging.warning(f"Some documents failed processing: {results['message']}")
+        
+        return {
+            "message": results.get("message", "Documents processed with mixed results"),
+            "total_documents": results.get("total", 0),
+            "processed": results.get("processed", 0),
+            "failed": results.get("failed", 0),
+            "details": results.get("file_results", [])
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception(f"Error processing all project documents for RAG: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/")
 async def read_root():
     """
     Root endpoint with information about the API.
     """
+    # Check if Ollama is available
+    ollama_status = "Available" if ollama_service else "Not available"
+    
     return {
         "message": "Welcome to the LLMCreativeStudio API!",
-        "version": "0.9.0",
+        "version": "0.10.0",
         "features": [
             "Multi-LLM conversations with Claude, ChatGPT, and Gemini",
             "AutoGen-powered conversation management",
@@ -840,8 +1017,22 @@ async def read_root():
             "Project management for persistent work",
             "Character-based roleplay for creative tasks",
             "Document context integration",
-            "Role-based conversational AI"
-        ]
+            "Role-based conversational AI",
+            "Advanced Local RAG with Ollama (phi4:14b-q4_K_M and nomic-embed-text)"
+        ],
+        "ollama_status": ollama_status,
+        "rag_capabilities": {
+            "status": ollama_status,
+            "models": {
+                "retrieval": "phi4:14b-q4_K_M",
+                "embedding": "nomic-embed-text"
+            },
+            "endpoints": [
+                "/rag/query",
+                "/projects/{project_id}/documents/{document_id}/process",
+                "/projects/{project_id}/process_all_documents"
+            ]
+        }
     }
 
 # --- Ensure required directories exist ---
