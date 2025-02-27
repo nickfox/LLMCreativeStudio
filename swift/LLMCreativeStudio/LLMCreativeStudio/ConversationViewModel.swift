@@ -30,7 +30,7 @@ class ConversationViewModel: ObservableObject {
         projectStore.currentProject
     }
     
-    var characters: [Character] {
+    var characters: [CharacterModel] {
         projectStore.characters
     }
     
@@ -153,7 +153,7 @@ class ConversationViewModel: ObservableObject {
     func createProject(name: String, type: String, description: String) async -> Bool {
         do {
             projectStore.setLoading(true)
-            let projectId = try await networkService.createProject(name: name, type: type, description: description)
+            _ = try await networkService.createProject(name: name, type: type, description: description)
             
             // Refresh projects list
             await fetchProjects()

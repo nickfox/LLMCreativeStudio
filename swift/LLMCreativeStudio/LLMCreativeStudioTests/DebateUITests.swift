@@ -1,20 +1,8 @@
 // /Users/nickfox137/Documents/llm-creative-studio/swift/LLMCreativeStudio/LLMCreativeStudioTests/DebateUITests.swift
 
-// Suppress warnings for this file
-#if compiler(>=5.7)
-#warning("Using deprecated ViewInspector API - planned to be updated in the next release")
-#endif
-
 import XCTest
-import ViewInspector
 import SwiftUI
 @testable import LLMCreativeStudio
-
-// MARK: - Extensions for View Inspection
-// Enable inspection for our custom views
-extension MessageBubble: Inspectable {}
-extension DebateStatusView: Inspectable {}
-extension DebateInputPromptView: Inspectable {}
 
 class DebateUITests: XCTestCase {
     

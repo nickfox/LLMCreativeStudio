@@ -8,8 +8,8 @@ protocol MessageStoreProtocol {
     
     func addMessage(text: String, sender: String, senderName: String, referencedMessageId: UUID?, messageIntent: String?)
     func clearMessages()
-    func parseMessage(_ message: String, characters: [Character]) -> (llmName: String, parsedMessage: String, dataQuery: String)
-    func getSenderName(for llmName: String, characters: [Character]) -> String
+    func parseMessage(_ message: String, characters: [CharacterModel]) -> (llmName: String, parsedMessage: String, dataQuery: String)
+    func getSenderName(for llmName: String, characters: [CharacterModel]) -> String
     func getRecentContext() -> [[String: Any]]
 }
 
@@ -39,7 +39,7 @@ class MessageStore: MessageStoreProtocol, ObservableObject {
         }
     }
     
-    func parseMessage(_ message: String, characters: [Character]) -> (llmName: String, parsedMessage: String, dataQuery: String) {
+    func parseMessage(_ message: String, characters: [CharacterModel]) -> (llmName: String, parsedMessage: String, dataQuery: String) {
         // Regular expression for @mentions
         let mentionRegex = try! NSRegularExpression(pattern: "@([a-zA-Z]+)", options: [])
         let matches = mentionRegex.matches(in: message, options: [], range: NSRange(location: 0, length: message.utf16.count))
@@ -99,7 +99,7 @@ class MessageStore: MessageStoreProtocol, ObservableObject {
         return (llmName, parsedMessage, dataQuery)
     }
     
-    func getSenderName(for llmName: String, characters: [Character]) -> String {
+    func getSenderName(for llmName: String, characters: [CharacterModel]) -> String {
         // Check if this LLM has a character assigned
         if let character = characters.first(where: { $0.llm_name == llmName }) {
             return character.character_name
