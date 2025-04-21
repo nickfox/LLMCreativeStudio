@@ -2,36 +2,36 @@
 
 import SwiftUI
 
-struct Message: Identifiable {
-    let id = UUID()
-    let text: String
-    let sender: String  // "user", "gemini", "chatgpt", "claude", "system", "synthesis"
-    let senderName: String // "nick", "Gemini", "ChatGPT", "Claude", "System", "Synthesis"
-    let timestamp: Date
-    let referencedMessageId: UUID?  // ID of message being referenced
-    let conversationMode: String?    // "open", "debate", "creative", "research"
-    let messageIntent: String?       // "question", "response", "agreement", "disagreement"
+public struct Message: Identifiable {
+    public let id = UUID()
+    public let text: String
+    public let sender: String  // "user", "gemini", "chatgpt", "claude", "system", "synthesis"
+    public let senderName: String // "nick", "Gemini", "ChatGPT", "Claude", "System", "Synthesis"
+    public let timestamp: Date
+    public let referencedMessageId: UUID?  // ID of message being referenced
+    public let conversationMode: String?    // "open", "debate", "creative", "research"
+    public let messageIntent: String?       // "question", "response", "agreement", "disagreement"
     
     // Debate specific properties
-    let debateRound: Int?           // 1=Opening, 2=Questioning, 3=Responses, 4=Consensus, 5=Synthesis
-    let debateState: String?        // Corresponds to DebateState enum names
-    let waitingForUser: Bool?       // Indicates if waiting for user input
-    let actionRequired: String?     // E.g., "debate_input" - UI action needed
+    public let debateRound: Int?           // 1=Opening, 2=Questioning, 3=Responses, 4=Consensus, 5=Synthesis
+    public let debateState: String?        // Corresponds to DebateState enum names
+    public let waitingForUser: Bool?       // Indicates if waiting for user input
+    public let actionRequired: String?     // E.g., "debate_input" - UI action needed
     
     // Date formatter for the specific format you want
-    static let timestampFormatter: DateFormatter = {
+    public static let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mma MMM d, yyyy"
         return formatter
     }()
     
-    var formattedTimestamp: String {
+    public var formattedTimestamp: String {
         let formatted = Message.timestampFormatter.string(from: timestamp)
         return formatted.replacingOccurrences(of: "AM", with: "\u{2009}am ")
                        .replacingOccurrences(of: "PM", with: "\u{2009}pm ")
     }
     
-    init(text: String,
+    public init(text: String,
          sender: String,
          senderName: String,
          timestamp: Date = Date(),

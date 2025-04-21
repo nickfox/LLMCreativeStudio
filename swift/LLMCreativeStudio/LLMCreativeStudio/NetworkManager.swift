@@ -43,9 +43,9 @@ struct ProjectFile: Identifiable, Codable {
     }
 }
 
-struct RAGSource: Identifiable, Codable {
-    let id = UUID()
-    let document_id: String
+public struct RAGSource: Identifiable, Codable {
+    public let id = UUID()
+    public let document_id: String
     let chunk_id: Int
     let similarity: Double
     let text_preview: String

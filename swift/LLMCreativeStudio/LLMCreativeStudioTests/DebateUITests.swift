@@ -85,7 +85,7 @@ class DebateUITests: XCTestCase {
             senderName: "Claude"
         )
         
-        let bubble = MessageBubble(message: message)
+        _ = MessageBubble(message: message)
         
         // Just verify the message was created with the right content
         XCTAssertEqual(message.text, "This is a test message")

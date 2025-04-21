@@ -3,8 +3,8 @@
 Ollama Service Module
 
 This module provides integration with locally running Ollama models:
-- phi4:14b-q4_K_M for retrieval and text generation
-- nomic-embed-text for document embedding generation
+- qwen2.5:14b-instruct-q8_0 for retrieval and text generation
+- snowflake-arctic-embed:137m for document embedding generation
 
 It enables local RAG (Retrieval Augmented Generation) capabilities
 for the LLMCreativeStudio without external API dependencies.
@@ -16,10 +16,14 @@ import json
 import httpx
 import asyncio
 import numpy as np
+import re
 from typing import List, Dict, Any, Optional, Union
 from pathlib import Path
 import time
 import traceback
+
+# Import the enhanced chunking function
+from enhanced_chunking import chunk_research_paper
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -32,8 +36,8 @@ class OllamaService:
     
     def __init__(self, 
                  base_url: str = "http://localhost:11434",
-                 rag_model: str = "phi4:14b-q4_K_M",
-                 embedding_model: str = "nomic-embed-text"):
+                 rag_model: str = "qwen2.5:14b-instruct-q8_0",
+                 embedding_model: str = "snowflake-arctic-embed:137m"):
         """
         Initialize the Ollama service.
         
@@ -316,9 +320,9 @@ class OllamaService:
                 return False
             
             # Chunk document
-            chunks = self._chunk_text(document_text, chunk_size, chunk_overlap)
-            logger.info(f"Document {document_id} chunked into {len(chunks)} parts")
-            
+            chunk_data = self._chunk_text(document_text, chunk_size, chunk_overlap)
+            logger.info(f"Document {document_id} chunked into {len(chunk_data)} parts")
+
             # Initialize project vector store if needed
             if project_id not in self.vector_stores:
                 # Try to load from disk first
@@ -328,17 +332,19 @@ class OllamaService:
             
             # Generate and store embeddings for each chunk
             document_embeddings = []
-            for i, chunk in enumerate(chunks):
-                embedding = await self.generate_embedding(chunk)
+            for i, chunk_info in enumerate(chunk_data):
+                embedding = await self.generate_embedding(chunk_info["content"])
                 if embedding:
                     document_embeddings.append({
                         "chunk_id": i,
-                        "text": chunk,
-                        "embedding": embedding
+                        "text": chunk_info["content"],
+                        "embedding": embedding,
+                        "heading": chunk_info["heading"],
+                        "level": chunk_info["level"]
                     })
                 # Add a small delay to avoid overwhelming Ollama
                 await asyncio.sleep(0.1)
-            
+
             # Store the embeddings
             self.vector_stores[project_id][document_id] = document_embeddings
             
@@ -391,13 +397,26 @@ class OllamaService:
                         "document_id": document_id,
                         "chunk_id": chunk["chunk_id"],
                         "text": chunk["text"],
-                        "similarity": similarity
+                        "similarity": similarity,
+                        "heading": chunk["heading"],
+                        "level": chunk["level"]
                     })
-            
-            # Sort by similarity and get top_k
-            all_chunks.sort(key=lambda x: x["similarity"], reverse=True)
+
+            # Calculate a score based on similarity, heading match, and level
+            for chunk in all_chunks:
+                score = chunk["similarity"]
+                # Bonus for heading match (simple keyword match)
+                if any(keyword.lower() in chunk["heading"].lower() for keyword in query.split()):
+                    score += 0.2  # Example bonus
+                # Penalty for deeper levels (higher level number)
+                score -= chunk["level"] * 0.1  # Example penalty
+
+                chunk["score"] = score
+
+            # Sort by combined score and get top_k
+            all_chunks.sort(key=lambda x: x["score"], reverse=True)
             return all_chunks[:top_k]
-            
+
         except Exception as e:
             logger.error(f"Error retrieving context: {e}")
             logger.error(traceback.format_exc())
@@ -526,9 +545,11 @@ Remember to cite your sources and only use information from the provided context
                 for chunk in chunks:
                     serializable_store[document_id].append({
                         "chunk_id": chunk["chunk_id"],
-                        "embedding": chunk["embedding"]
+                        "embedding": chunk["embedding"],
+                        "heading": chunk["heading"],
+                        "level": chunk["level"]
                     })
-            
+
             project_file = self.vector_store_dir / f"{project_id}.json"
             
             with open(project_file, 'w') as f:
@@ -573,9 +594,11 @@ Remember to cite your sources and only use information from the provided context
                     self.vector_stores[project_id][document_id].append({
                         "chunk_id": chunk["chunk_id"],
                         "embedding": chunk["embedding"],
-                        "text": "Embedded text" # Placeholder - will be filled in when needed
+                        "text": "Embedded text",  # Placeholder - will be filled in when needed
+                        "heading": chunk.get("heading", ""), # added to fix: Unused variable 'chunk'
+                        "level": chunk.get("level", 0) # added to fix: Unused variable 'chunk'
                     })
-                
+
             logger.info(f"Loaded vector store for project {project_id} with {len(self.vector_stores[project_id])} documents")
             return True
             
@@ -587,6 +610,7 @@ Remember to cite your sources and only use information from the provided context
     def _chunk_text(self, text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
         """
         Split text into overlapping chunks with a preference for semantic boundaries.
+        For research papers, uses section-based chunking if possible.
         
         Args:
             text: Text to split
@@ -596,6 +620,22 @@ Remember to cite your sources and only use information from the provided context
         Returns:
             List[str]: List of text chunks
         """
+        # Try to detect if this is a research paper based on content patterns
+        research_paper_indicators = [
+            "Abstract", "Introduction", "Methodology", "Results", "Discussion", "Conclusion", 
+            "References", "et al.", "Fig.", "Table", "Eq.", "i.e."
+        ]
+        
+        indicator_count = sum(1 for indicator in research_paper_indicators if indicator in text)
+        
+        # If this looks like a research paper, use specialized chunking
+        if indicator_count >= 3:  # At least 3 indicators suggest this is a research paper
+            logging.info(f"Detected research paper format, using section-based chunking")
+            chunks = chunk_research_paper(text, max_chunk_size=chunk_size)
+            logging.info(f"Research paper split into {len(chunks)} semantic sections")
+            return [chunk["content"] for chunk in chunks]
+
+        # Otherwise use the general chunking method
         # Split text by double newline to preserve paragraph boundaries
         paragraphs = text.split("\n\n")
         
@@ -672,6 +712,190 @@ Remember to cite your sources and only use information from the provided context
         
         return chunks
     
+    def _chunk_research_paper(self, text: str, max_chunk_size: int = 2000) -> List[str]:
+        logger = logging.getLogger(__name__)
+        """
+        Split a research paper into chunks based on section headings with fallback mechanisms.
+        
+        Args:
+            text: Text of the research paper
+            max_chunk_size: Maximum size for a single chunk
+            
+        Returns:
+            List[str]: List of text chunks preserving semantic structure where possible
+        """
+        
+        # Common section heading patterns in research papers across different disciplines
+        section_patterns = [
+            # Common main sections
+            r"^\s*Abstract[\s:]*$",
+            r"^\s*Introduction[\s:]*$",
+            r"^\s*Background[\s:]*$",
+            r"^\s*Related Work[\s:]*$", 
+            r"^\s*Methodology[\s:]*$",
+            r"^\s*Methods[\s:]*$",
+            r"^\s*Materials and Methods[\s:]*$",
+            r"^\s*Experimental Setup[\s:]*$",
+            r"^\s*Results[\s:]*$",
+            r"^\s*Discussion[\s:]*$",
+            r"^\s*Conclusion[\s:]*$",
+            r"^\s*Conclusions[\s:]*$",
+            r"^\s*References[\s:]*$",
+            r"^\s*Bibliography[\s:]*$",
+            
+            # Additional common sections
+            r"^\s*Literature Review[\s:]*$",
+            r"^\s*Theoretical Framework[\s:]*$",
+            r"^\s*Data Collection[\s:]*$",
+            r"^\s*Analysis[\s:]*$",
+            r"^\s*Evaluation[\s:]*$",
+            r"^\s*Implementation[\s:]*$",
+            r"^\s*System Design[\s:]*$",
+            r"^\s*Proposed Method[\s:]*$",
+            r"^\s*Proposed Approach[\s:]*$",
+            r"^\s*Experiments[\s:]*$",
+            r"^\s*Findings[\s:]*$",
+            r"^\s*Limitations[\s:]*$",
+            r"^\s*Future Work[\s:]*$",
+            r"^\s*Acknowledgments[\s:]*$",
+            r"^\s*Appendix[\s:]*$",
+            
+            # Numbered sections and generic patterns (should be last to avoid false positives)
+            r"^\s*\d+[\.\)]\s+[A-Z][\w\s]+",  # Numbered sections like "1. Introduction"
+            r"^\s*[A-Z]\.\s+[A-Z][\w\s]+",    # Lettered sections like "A. Methodology"
+            r"^\s*[IVXLCDM]+\.\s+[A-Z][\w\s]+", # Roman numeral sections
+            r"^\s*[A-Z][A-Za-z\s]+$"           # Any capitalized heading on its own line
+        ]
+        
+        # Function to split text by pattern and check chunk sizes
+        def split_by_pattern(text, pattern, min_lines=3):  # Reduced min_lines for better compatibility with shorter sections
+            logger.debug(f"Attempting to split text by pattern: {pattern}")
+            chunks = []
+            lines = text.split('\n')
+            current_chunk = []
+            current_heading = "Introduction"  # Default for start if no heading detected
+            
+            for line in lines:
+                if re.match(pattern, line, re.MULTILINE):
+                    # Save the previous chunk if it exists and has sufficient content
+                    if current_chunk and len(current_chunk) >= min_lines:
+                        chunks.append({
+                            "heading": current_heading,
+                            "content": '\n'.join(current_chunk),
+                            "size": len('\n'.join(current_chunk))
+                        })
+                    # Update heading and start new chunk
+                    current_heading = line.strip()
+                    current_chunk = [line]
+                else:
+                    current_chunk.append(line)
+            
+            # Add the last chunk
+            if current_chunk and len(current_chunk) >= min_lines:
+                chunks.append({
+                    "heading": current_heading,
+                    "content": '\n'.join(current_chunk),
+                    "size": len('\n'.join(current_chunk))
+                })
+            
+            return chunks
+        
+        # Try to split by main sections first
+        combined_pattern = '|'.join(section_patterns)
+        section_chunks = split_by_pattern(text, combined_pattern)
+        logger.debug(f"Detected {len(section_chunks)} main sections in the research paper")
+        
+        # If no sections were found or there's just one giant chunk, try fallback approaches
+        if not section_chunks or (len(section_chunks) == 1 and section_chunks[0]["size"] > max_chunk_size):
+            # Fallback 1: Try looking for subsections (often numbered like 1.1, 1.2, etc.)
+            logger.debug("No main sections found or section too large, trying subsection detection")
+            
+            # Multiple patterns for different subsection formats
+            subsection_patterns = [
+                r"^\s*\d+\.\d+[\.\s\)]*[A-Za-z]",  # Standard decimal subsections: 1.1 Title
+                r"^\s*\d+\.\d+\s+",                 # Subsections without text on same line: 1.1
+                r"^\s*[A-Z]\.\d+\s+",                # Letter-based subsections: A.1
+                r"^\s*\d+\s*\.\s*\d+\s+"             # Spaced subsections: 1 . 1
+            ]
+            
+            subsection_pattern = "|".join(subsection_patterns)
+            logger.debug(f"Using subsection pattern: {subsection_pattern}")
+            section_chunks = split_by_pattern(text, subsection_pattern)
+            logger.debug(f"Detected {len(section_chunks)} subsections in the research paper")
+        
+        # If still no good chunks, fall back to paragraph-based chunking
+        final_chunks = []
+        
+        if not section_chunks or all(chunk["size"] > max_chunk_size for chunk in section_chunks):
+            logger.debug("No sections or subsections found or all sections too large, falling back to paragraph chunking")
+            # Paragraph-based chunking as final fallback
+            paragraphs = text.split('\n\n')
+            current_chunk = []
+            current_size = 0
+            
+            for para in paragraphs:
+                para_size = len(para)
+                
+                # If single paragraph is too big, we'll have to split it by sentences
+                if para_size > max_chunk_size:
+                    # Try to split by sentences, handling cases where there might not be proper spacing
+                    sentences = re.split(r'(?<=[.!?])\s+|(?<=[.!?])(?=[A-Z])', para)
+                    sentence_chunk = []
+                    sentence_size = 0
+                    
+                    for sentence in sentences:
+                        if sentence_size + len(sentence) + 1 <= max_chunk_size or not sentence_chunk:
+                            sentence_chunk.append(sentence)
+                            sentence_size += len(sentence) + 1
+                        else:
+                            final_chunks.append('\n'.join(sentence_chunk))
+                            sentence_chunk = [sentence]
+                            sentence_size = len(sentence)
+                    
+                    if sentence_chunk:
+                        final_chunks.append('\n'.join(sentence_chunk))
+                
+                # Normal paragraph handling
+                elif current_size + para_size <= max_chunk_size or not current_chunk:
+                    current_chunk.append(para)
+                    current_size += para_size + 2  # +2 for paragraph break
+                else:
+                    final_chunks.append('\n\n'.join(current_chunk))
+                    current_chunk = [para]
+                    current_size = para_size
+            
+            # Add the last chunk if it exists
+            if current_chunk:
+                final_chunks.append('\n\n'.join(current_chunk))
+        else:
+            # Process the section chunks, splitting any that are too large
+            for chunk in section_chunks:
+                if chunk["size"] <= max_chunk_size:
+                    final_chunks.append(chunk["content"])
+                else:
+                    # Split large sections by paragraphs
+                    heading = chunk["heading"]
+                    content = chunk["content"]
+                    paragraphs = content.split('\n\n')
+                    
+                    current_chunk = [heading]  # Start with the heading
+                    current_size = len(heading)
+                    
+                    for para in paragraphs:
+                        if current_size + len(para) + 2 <= max_chunk_size or len(current_chunk) == 1:  # Only heading so far
+                            current_chunk.append(para)
+                            current_size += len(para) + 2
+                        else:
+                            final_chunks.append('\n\n'.join(current_chunk))
+                            current_chunk = [heading + " (continued)", para]
+                            current_size = len(heading) + 13 + len(para)  # 13 for " (continued)"
+                    
+                    if len(current_chunk) > 1:  # More than just the heading
+                        final_chunks.append('\n\n'.join(current_chunk))
+        
+        logger.debug(f"Research paper chunking completed with {len(final_chunks)} chunks")
+        return final_chunks
+        
     def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """
         Calculate cosine similarity between two vectors.
@@ -698,5 +922,4 @@ Remember to cite your sources and only use information from the provided context
         # Avoid division by zero
         if norm1 == 0 or norm2 == 0:
             return 0.0
-        
         return dot_product / (norm1 * norm2)

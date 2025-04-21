@@ -1,5 +1,10 @@
 import pytest
 import logging
+import sys
+import os
+
+# Configure pytest-asyncio
+pytest_plugins = ["pytest_asyncio"]
 
 # Additional test fixtures can be added here
 

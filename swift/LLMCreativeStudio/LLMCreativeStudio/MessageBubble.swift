@@ -2,8 +2,57 @@
 
 import SwiftUI
 
+struct SourceInfoView: View {
+    let source: RAGSource
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Source: Document \(source.document_id), Chunk \(source.chunk_id)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.gray)
+            if !source.text_preview.isEmpty {
+                Text(source.text_preview)
+                    .font(.system(size: 12))
+                    .foregroundColor(.gray.opacity(0.8))
+            }
+        }
+        .padding(.bottom, 4)
+    }
+}
+
 struct MessageBubble: View {
     let message: Message
+
+    // Changed from private to internal for testing
+    func extractSources(from text: String) -> [RAGSource]? {
+        // Find the start of the "Sources:" section
+        guard let sourcesStartIndex = text.range(of: "\n\nSources:\n")?.upperBound else {
+            return nil // No sources found
+        }
+
+        // Extract the JSON string
+        let jsonString = String(text[sourcesStartIndex...])
+
+        // Attempt to parse the JSON
+        guard let jsonData = jsonString.data(using: .utf8),
+              let jsonArray = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [[String: Any]] else {
+            print("Error: Could not parse sources JSON")
+            return nil
+        }
+
+        // Map the JSON array to an array of RAGSource objects
+        let sources = jsonArray.compactMap { sourceDict -> RAGSource? in
+            guard let documentId = sourceDict["document_id"] as? String,
+                  let chunkId = sourceDict["chunk_id"] as? Int,
+                  let similarity = sourceDict["similarity"] as? Double,
+                  let textPreview = sourceDict["text_preview"] as? String else {
+                return nil // Skip if any required field is missing
+            }
+            return RAGSource(document_id: documentId, chunk_id: chunkId, similarity: similarity, text_preview: textPreview)
+        }
+
+        return sources.isEmpty ? nil : sources
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -60,19 +109,30 @@ struct MessageBubble: View {
                 Text(message.text)
                     .font(.system(size: 15))
                     .foregroundColor(.messageText.opacity(0.9))
-                    .textSelection(.enabled)  // Enable text selection
+                    .textSelection(.enabled)
+                
+                // Display source information for RAG responses
+                if message.sender == "research_assistant" {
+                    if let sources = extractSources(from: message.text) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(sources) { source in
+                                SourceInfoView(source: source)
+                            }
+                        }
+                    }
+                }
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(getMessageBackground())
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(message.waitingForUser == true ? Color.orange.opacity(0.5) : Color.clear, lineWidth: 1)
-            )
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(getMessageBackground())
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(message.waitingForUser == true ? Color.orange.opacity(0.5) : Color.clear, lineWidth: 1)
+        )
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
     }

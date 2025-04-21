@@ -52,18 +52,21 @@ conversation_managers = {}
 project_manager = ProjectManager()
 
 # --- Initialize Ollama Service ---
-ollama_service = OllamaService()
-try:
-    # Create an event loop and check availability
-    loop = asyncio.new_event_loop()
-    ollama_available = loop.run_until_complete(ollama_service.check_availability())
-    if ollama_available:
-        logging.info("Ollama service initialized successfully with phi4 and nomic-embed-text models")
-    else:
-        logging.warning("Ollama service initialized but models not available. RAG functionality will be limited.")
-except Exception as e:
-    logging.error(f"Failed to initialize Ollama service: {e}")
-    ollama_service = None
+ollama_service = None
+
+@app.on_event("startup")
+async def check_ollama_availability():
+    global ollama_service
+    ollama_service = OllamaService()
+    try:
+        ollama_available = await ollama_service.check_availability()
+        if ollama_available:
+            logging.info("Ollama service initialized successfully with qwen2.5:14b-instruct-q8_0 and snowflake-arctic-embed:137m models")
+        else:
+            logging.warning("Ollama service initialized but models not available. RAG functionality will be limited.")
+    except Exception as e:
+        logging.error(f"Failed to initialize Ollama service: {e}")
+        ollama_service = None
 
 # --- Pydantic Models ---
 
@@ -1018,14 +1021,14 @@ async def read_root():
             "Character-based roleplay for creative tasks",
             "Document context integration",
             "Role-based conversational AI",
-            "Advanced Local RAG with Ollama (phi4:14b-q4_K_M and nomic-embed-text)"
+            "Advanced Local RAG with Ollama (qwen2.5:14b-instruct-q8_0 and snowflake-arctic-embed:137m)"
         ],
         "ollama_status": ollama_status,
         "rag_capabilities": {
             "status": ollama_status,
             "models": {
-                "retrieval": "phi4:14b-q4_K_M",
-                "embedding": "nomic-embed-text"
+                "retrieval": "qwen2.5:14b-instruct-q8_0",
+                "embedding": "snowflake-arctic-embed:137m"
             },
             "endpoints": [
                 "/rag/query",
