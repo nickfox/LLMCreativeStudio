@@ -1,6 +1,6 @@
 # LLM Creative Studio
 
-![LLM Creative Studio](https://raw.githubusercontent.com/nickfox137/llm-creative-studio/main/assets/banner.png)
+![LLM Creative Studio](https://github.com/nickfox/LLMCreativeStudio/blob/main/swift/LLMCreativeStudio/LLMCreativeStudio/Assets.xcassets/AppIcon.appiconset/256x256.png)
 
 An innovative open-source platform for orchestrating conversations between multiple AI models, with a focus on creative collaboration, structured debates, and advanced role-playing.
 
