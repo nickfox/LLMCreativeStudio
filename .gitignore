@@ -1,5 +1,79 @@
+# Python
 **/__pycache__/
+*.pyc
+*.pyd
+.python-version
+venv/
+env/
+.venv/
+Lib/
+Scripts/
+include/
+*.egg-info/
+*.whl
+build/
+dist/
+MANIFEST
+__pycache__/
+
+# Environment Variables
+*.env
+.env
+
+# macOS
 .DS_Store
 **/.DS_Store
+
+# Swift
+# Xcode
+xcuserdata/
+*.xcworkspace
+*.xcodeproj/xcuserdata/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcuserstate
+project.xcworkspace/
+DerivedData/
+Build/
+build/
+*.app
+*.dSYM*
+*.ipa
+*.pkg
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# General
 notes/
-**/venv/
+.idea/
+.vscode/
+*.log
+*.swp
+*.swo
+*~
+*.bak
+*.dump
+*.orig
+*.pyo
+*.egg
+*.pth
+_build/
+tmp/
+temp/
+log/
+*.sqlite
+*.db
+*.DS_Store?
